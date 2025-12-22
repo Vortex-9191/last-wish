@@ -5,6 +5,17 @@ import { EffectComposer, Bloom, Vignette, DepthOfField } from '@react-three/post
 import { Map, User, Sun } from 'lucide-react'
 import * as THREE from 'three'
 import { useFuneralStore } from '../../stores/funeralStore'
+import {
+  Chrysanthemum,
+  MemorialTablet,
+  IncenseHolder,
+  BuddhistBell,
+  CandleStick,
+  Offerings,
+  PhotoFrame as ProceduralPhotoFrame,
+  FlowerWreathStand,
+  IncenseTable,
+} from './ProceduralModels'
 
 // Main FuneralScene wrapper component
 export function FuneralScene({ viewMode, setViewMode }) {
@@ -68,6 +79,14 @@ function LoadingFallback() {
   )
 }
 
+// Color map for flower colors
+const colorMap = {
+  white: '#ffffff',
+  pink: '#ffb7c5',
+  purple: '#e6e6fa',
+  yellow: '#fffacd',
+}
+
 // Scene content
 function SceneContent({ viewMode }) {
   const { customization, planType } = useFuneralStore()
@@ -108,6 +127,35 @@ function SceneContent({ viewMode }) {
 
       {/* Incense Burner */}
       <IncenseBurner />
+
+      {/* === 詳細なプロシージャルモデル === */}
+
+      {/* 位牌 (Memorial Tablet) */}
+      <MemorialTablet position={[0, 2.1, -4.3]} />
+
+      {/* りん (Buddhist Bell) */}
+      <BuddhistBell position={[-1.5, 1.2, -3.5]} />
+      <BuddhistBell position={[1.5, 1.2, -3.5]} />
+
+      {/* 供物 (Offerings) */}
+      <Offerings position={[-2.5, 1.2, -3.2]} />
+      <Offerings position={[2.5, 1.2, -3.2]} />
+
+      {/* 蝋燭 (詳細版) */}
+      <CandleStick position={[-1, 1.7, -3.8]} height={0.25} />
+      <CandleStick position={[1, 1.7, -3.8]} height={0.25} />
+
+      {/* 線香台 (焼香台) - 参列者用 */}
+      <IncenseTable position={[0, 0, 3.5]} />
+
+      {/* 花輪スタンド - 両サイド */}
+      <FlowerWreathStand position={[-5.5, 0, -2]} color={colorMap[flowerColor]} />
+      <FlowerWreathStand position={[5.5, 0, -2]} color={colorMap[flowerColor]} />
+      <FlowerWreathStand position={[-5.5, 0, 0]} color="#ffffff" />
+      <FlowerWreathStand position={[5.5, 0, 0]} color="#ffffff" />
+
+      {/* 菊の花 (祭壇装飾) */}
+      <ChrysanthemumArrangement color={flowerColor} theme={theme} />
 
       {/* Seating */}
       <Seating planType={planType} />
@@ -298,13 +346,6 @@ function Altar({ theme }) {
 // Improved Flower Arrangement
 function FlowerArrangement({ color, volume, theme }) {
   const count = volume === 'minimal' ? 2000 : volume === 'lavish' ? 8000 : 4000
-
-  const colorMap = {
-    white: '#ffffff',
-    pink: '#ffb7c5',
-    purple: '#e6e6fa',
-    yellow: '#fffacd',
-  }
 
   const meshRef = useRef()
   const initialized = useRef(false)
@@ -797,4 +838,51 @@ export function useOptionalGLTF(path) {
     console.warn(`GLTF model not found: ${path}`)
     return null
   }
+}
+
+// Chrysanthemum flower arrangement using procedural flowers
+function ChrysanthemumArrangement({ color, theme }) {
+  const flowerPositions = useMemo(() => {
+    const positions = []
+    const count = 30
+
+    for (let i = 0; i < count; i++) {
+      if (theme === 'traditional') {
+        // Symmetric arrangement for traditional
+        const side = i % 2 === 0 ? -1 : 1
+        const x = side * (1.5 + Math.random() * 2)
+        const y = 1.3 + Math.random() * 1.2
+        const z = -3.5 - Math.random() * 1.5
+        positions.push({ position: [x, y, z], scale: 0.8 + Math.random() * 0.4 })
+      } else if (theme === 'modern') {
+        // Asymmetric wave pattern
+        const x = (Math.random() - 0.5) * 8
+        const y = 1 + Math.sin(x * 0.5) * 0.5 + Math.random() * 0.3
+        const z = -3 - Math.random() * 2
+        positions.push({ position: [x, y, z], scale: 0.6 + Math.random() * 0.5 })
+      } else {
+        // Nature - organic scatter
+        const angle = Math.random() * Math.PI * 2
+        const radius = 2 + Math.random() * 3
+        const x = Math.cos(angle) * radius
+        const y = 0.8 + Math.random() * 1
+        const z = -3 + Math.sin(angle) * 0.5
+        positions.push({ position: [x, y, z], scale: 0.7 + Math.random() * 0.4 })
+      }
+    }
+    return positions
+  }, [theme])
+
+  return (
+    <group>
+      {flowerPositions.map((flower, i) => (
+        <Chrysanthemum
+          key={i}
+          position={flower.position}
+          scale={flower.scale}
+          color={colorMap[color]}
+        />
+      ))}
+    </group>
+  )
 }
