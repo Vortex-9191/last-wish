@@ -123,7 +123,7 @@ function FuneralHall({ isMobile }) {
           seatRows: 2,
           seatsPerRow: 4,
           flowerDensity: 0.8 * volumeMultiplier,
-          flowerCount: 40,
+          flowerCount: 300,  // 大幅増加
         }
       case 'plan60':
         // 家族葬60（60万円）- 2段祭壇、幅2.5m
@@ -138,7 +138,7 @@ function FuneralHall({ isMobile }) {
           seatRows: 2,
           seatsPerRow: 5,
           flowerDensity: 1.0 * volumeMultiplier,
-          flowerCount: 80,
+          flowerCount: 600,  // 大幅増加
         }
       case 'plan100':
         // 一般葬100（100万円）- 3段祭壇、幅4m
@@ -153,7 +153,7 @@ function FuneralHall({ isMobile }) {
           seatRows: 3,
           seatsPerRow: 7,
           flowerDensity: 1.3 * volumeMultiplier,
-          flowerCount: 150,
+          flowerCount: 1000,  // 大幅増加
         }
       case 'plan140':
         // 一般葬140（140万円）- 4段祭壇、幅5m、特大
@@ -168,7 +168,7 @@ function FuneralHall({ isMobile }) {
           seatRows: 5,
           seatsPerRow: 8,
           flowerDensity: 1.6 * volumeMultiplier,
-          flowerCount: 250,
+          flowerCount: 1500,  // 大幅増加
         }
       default:
         // デフォルトはplan60
@@ -183,7 +183,7 @@ function FuneralHall({ isMobile }) {
           seatRows: 2,
           seatsPerRow: 5,
           flowerDensity: 1.0 * volumeMultiplier,
-          flowerCount: 80,
+          flowerCount: 600,
         }
     }
   }, [planType, flowerVolume])
@@ -246,7 +246,7 @@ function FuneralHall({ isMobile }) {
       )}
 
       {/* 供花スタンド（一般葬のみ） */}
-      {planType === 'general' && (
+      {(planType === 'plan100' || planType === 'plan140') && (
         <FlowerStands color={colors} />
       )}
     </group>
@@ -465,274 +465,198 @@ function Floor({ config, planType, theme }) {
 }
 
 // ========== 生花祭壇（典礼会館風リアル版） ==========
-// 実際の生花祭壇を参考: 1-5段、幅1.5-10m、花は壁のように密集
-function FlowerAltar({ width, height, tiers = 3, flowerCount = 100, color, theme, flowerDensity = 1, isMobile }) {
+// 花で埋め尽くす壁のような表現
+function FlowerAltar({ width, height, tiers = 3, flowerCount = 600, color, theme, flowerDensity = 1, isMobile }) {
   // テーマ別の祭壇スタイル
   const altarStyle = useMemo(() => {
     switch (theme) {
       case 'traditional':
         return {
-          woodColor: '#5c4033',      // 濃い木目
-          trimColor: '#d4af37',       // 金
-          clothColor: '#1a1a4a',      // 紺
-          flowerRatio: 0.3,           // 白菊多め
-          greenRatio: 0.15,           // 緑の葉
+          frameColor: '#5c4033',
+          trimColor: '#d4af37',
+          clothColor: '#1a1a4a',
+          colorRatio: 0.25,  // アクセントカラーの割合
+          greenRatio: 0.15,
         }
       case 'modern':
         return {
-          woodColor: '#1a1a1a',       // 黒
-          trimColor: '#c0c0c0',       // シルバー
-          clothColor: '#2a2a2a',      // ダークグレー
-          flowerRatio: 0.7,           // カラー花多め
+          frameColor: '#1a1a1a',
+          trimColor: '#c0c0c0',
+          clothColor: '#2a2a2a',
+          colorRatio: 0.5,
           greenRatio: 0.1,
         }
       case 'nature':
       default:
         return {
-          woodColor: '#6b5344',       // ナチュラルウッド
-          trimColor: '#a08060',       // ブロンズ
-          clothColor: '#1a3a1a',      // 深緑
-          flowerRatio: 0.5,           // バランス
-          greenRatio: 0.2,            // 緑多め
+          frameColor: '#6b5344',
+          trimColor: '#a08060',
+          clothColor: '#1a3a1a',
+          colorRatio: 0.35,
+          greenRatio: 0.25,
         }
     }
   }, [theme])
 
-  // 段の構造を生成
-  const tierStructure = useMemo(() => {
-    const structure = []
-    const tierHeight = height / tiers
-    for (let i = 0; i < tiers; i++) {
-      const tierWidth = width - (i * width * 0.08)  // 上に行くほど少し狭く
-      const tierDepth = 0.5 - (i * 0.05)            // 上に行くほど浅く
-      structure.push({
-        y: i * tierHeight,
-        width: tierWidth,
-        depth: tierDepth,
-        zOffset: -i * 0.15,  // 段差で奥に
-      })
-    }
-    return structure
-  }, [width, height, tiers])
-
-  // 花を大量に生成 - 壁のように密集
+  // 花のグリッド配置を生成（壁のように密集）
   const flowers = useMemo(() => {
     const result = []
-    const actualCount = Math.floor(flowerCount * flowerDensity * (isMobile ? 0.4 : 1))
+    const actualCount = Math.floor(flowerCount * flowerDensity * (isMobile ? 0.3 : 1))
 
-    // 各段に花を配置
-    for (let tier = 0; tier < tiers; tier++) {
-      const tierData = tierStructure[tier]
-      const flowersPerTier = Math.floor(actualCount / tiers)
-      const tierWidth = tierData.width * 0.9
-      const tierHeightRange = height / tiers * 0.8
+    // グリッド計算
+    const cols = Math.ceil(Math.sqrt(actualCount * (width / height)))
+    const rows = Math.ceil(actualCount / cols)
+    const cellWidth = width / cols
+    const cellHeight = height / rows
+    const flowerSize = Math.min(cellWidth, cellHeight) * 0.8
 
-      for (let i = 0; i < flowersPerTier; i++) {
-        // 横に均等に、縦はランダム
-        const col = i % Math.ceil(Math.sqrt(flowersPerTier))
-        const row = Math.floor(i / Math.ceil(Math.sqrt(flowersPerTier)))
-        const cols = Math.ceil(Math.sqrt(flowersPerTier))
-        const rows = Math.ceil(flowersPerTier / cols)
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        // 遺影エリアを避ける（中央上部）
+        const x = (col - cols / 2 + 0.5) * cellWidth + (Math.random() - 0.5) * cellWidth * 0.3
+        const y = (row + 0.5) * cellHeight + (Math.random() - 0.5) * cellHeight * 0.3
+        const z = (Math.random() - 0.5) * 0.15
 
-        const x = (col - cols / 2 + 0.5) * (tierWidth / cols) + (Math.random() - 0.5) * 0.08
-        const y = tierData.y + (row / rows) * tierHeightRange + 0.1 + (Math.random() - 0.5) * 0.05
-        const z = tierData.zOffset + (Math.random() - 0.5) * 0.1
+        // 遺影エリア（上部中央）を避ける
+        const relY = y / height
+        const relX = Math.abs(x) / (width / 2)
+        if (relY > 0.55 && relY < 0.95 && relX < 0.25) continue
 
-        // 遺影エリアを避ける（上段中央）
-        if (tier >= tiers - 2) {
-          const distFromCenter = Math.sqrt(x * x + (y - height * 0.75) ** 2)
-          if (distFromCenter < 0.5) continue
-        }
-
-        // 花の種類を決定
+        // 花の種類を決定（白ベース + グリーン + アクセントカラー）
         const rand = Math.random()
-        let flowerType = 'white'
+        let flowerColor = '#ffffff'
         if (rand < altarStyle.greenRatio) {
-          flowerType = 'green'
-        } else if (rand < altarStyle.greenRatio + altarStyle.flowerRatio) {
-          flowerType = 'main'
+          flowerColor = '#2d5a2d'
+        } else if (rand < altarStyle.greenRatio + altarStyle.colorRatio) {
+          flowerColor = color.main
         }
 
         result.push({
           position: [x, y, z],
-          scale: 0.06 + Math.random() * 0.04,
-          type: flowerType,
-          rotation: [Math.random() * 0.2, Math.random() * Math.PI * 2, 0],
-        })
-      }
-    }
-
-    // サイドにも花を追加（より豪華に）
-    const sideFlowers = Math.floor(actualCount * 0.2)
-    for (let side of [-1, 1]) {
-      for (let i = 0; i < sideFlowers / 2; i++) {
-        const y = (i / (sideFlowers / 2)) * height * 0.7 + 0.1
-        const x = side * (width / 2 + 0.1 + Math.random() * 0.1)
-        const z = -y * 0.1 + Math.random() * 0.1
-
-        result.push({
-          position: [x, y, z],
-          scale: 0.05 + Math.random() * 0.03,
-          type: Math.random() < 0.6 ? 'main' : 'white',
-          rotation: [0, side * Math.PI / 4, 0],
+          scale: flowerSize * (0.8 + Math.random() * 0.4),
+          color: flowerColor,
         })
       }
     }
 
     return result
-  }, [flowerCount, flowerDensity, tiers, tierStructure, height, width, altarStyle, isMobile])
+  }, [flowerCount, flowerDensity, width, height, color, altarStyle, isMobile])
 
-  const getFlowerColor = (type) => {
-    switch (type) {
-      case 'main': return color.main
-      case 'green': return '#228b22'
-      default: return '#ffffff'
+  // サイドアレンジメント用の花
+  const sideFlowers = useMemo(() => {
+    const result = []
+    const count = isMobile ? 15 : 40
+
+    for (let side of [-1, 1]) {
+      for (let i = 0; i < count; i++) {
+        const y = (i / count) * height * 0.9 + 0.1
+        const x = side * (width / 2 + 0.15 + Math.random() * 0.1)
+        const z = Math.random() * 0.1
+
+        result.push({
+          position: [x, y, z],
+          scale: 0.04 + Math.random() * 0.02,
+          color: Math.random() < 0.7 ? color.main : '#ffffff',
+        })
+      }
     }
-  }
+    return result
+  }, [width, height, color, isMobile])
 
   return (
     <group>
-      {/* 祭壇の段 - 階段状に */}
-      {tierStructure.map((tier, i) => (
-        <group key={i}>
-          {/* 段の本体 */}
-          <mesh position={[0, tier.y + 0.1, tier.zOffset]} castShadow receiveShadow>
-            <boxGeometry args={[tier.width, 0.2, tier.depth]} />
-            <meshStandardMaterial color={altarStyle.woodColor} roughness={0.6} />
-          </mesh>
-          {/* 段の前面装飾 */}
-          <mesh position={[0, tier.y + 0.1, tier.zOffset + tier.depth / 2 + 0.01]}>
-            <planeGeometry args={[tier.width, 0.2]} />
-            <meshStandardMaterial color={altarStyle.clothColor} roughness={0.8} />
-          </mesh>
-        </group>
-      ))}
-
-      {/* 背面パネル（花で覆われる） */}
-      <mesh position={[0, height / 2, -0.3]} receiveShadow>
-        <boxGeometry args={[width + 0.2, height, 0.1]} />
+      {/* 背面パネル */}
+      <mesh position={[0, height / 2, -0.15]}>
+        <boxGeometry args={[width + 0.3, height + 0.1, 0.1]} />
         <meshStandardMaterial color={altarStyle.clothColor} />
       </mesh>
 
-      {/* 花を大量配置 */}
+      {/* 花を大量配置 - シンプルな球体で高速化 */}
       {flowers.map((flower, i) => (
-        <FlowerCluster
-          key={i}
-          position={flower.position}
-          scale={flower.scale}
-          color={getFlowerColor(flower.type)}
-          rotation={flower.rotation}
-          isMobile={isMobile}
-        />
+        <mesh key={i} position={flower.position}>
+          <sphereGeometry args={[flower.scale, isMobile ? 4 : 6, isMobile ? 4 : 6]} />
+          <meshStandardMaterial color={flower.color} roughness={0.8} />
+        </mesh>
       ))}
 
-      {/* 上部装飾（金縁） */}
-      <mesh position={[0, height + 0.05, -0.2]}>
-        <boxGeometry args={[width + 0.3, 0.08, 0.3]} />
-        <meshStandardMaterial color={altarStyle.trimColor} metalness={0.7} roughness={0.3} />
+      {/* サイドの花 */}
+      {sideFlowers.map((flower, i) => (
+        <mesh key={`side-${i}`} position={flower.position}>
+          <sphereGeometry args={[flower.scale, 5, 5]} />
+          <meshStandardMaterial color={flower.color} roughness={0.8} />
+        </mesh>
+      ))}
+
+      {/* 上部装飾フレーム */}
+      <mesh position={[0, height + 0.05, 0]}>
+        <boxGeometry args={[width + 0.4, 0.1, 0.25]} />
+        <meshStandardMaterial color={altarStyle.trimColor} metalness={0.6} roughness={0.3} />
       </mesh>
 
-      {/* 左右の柱装飾 */}
+      {/* 左右の柱フレーム */}
       {[-1, 1].map((side) => (
-        <group key={side}>
-          <mesh position={[side * (width / 2 + 0.1), height / 2, 0]}>
-            <boxGeometry args={[0.1, height, 0.3]} />
-            <meshStandardMaterial color={altarStyle.trimColor} metalness={0.5} roughness={0.4} />
+        <mesh key={side} position={[side * (width / 2 + 0.15), height / 2, 0]}>
+          <boxGeometry args={[0.12, height + 0.1, 0.2]} />
+          <meshStandardMaterial color={altarStyle.trimColor} metalness={0.5} roughness={0.4} />
+        </mesh>
+      ))}
+
+      {/* 下部の段 */}
+      {Array.from({ length: tiers }).map((_, i) => {
+        const tierY = i * (height / tiers / 3)
+        const tierWidth = width - i * 0.2
+        return (
+          <mesh key={`tier-${i}`} position={[0, tierY + 0.08, 0.2 + i * 0.1]}>
+            <boxGeometry args={[tierWidth, 0.15, 0.3]} />
+            <meshStandardMaterial color={altarStyle.frameColor} roughness={0.6} />
+          </mesh>
+        )
+      })}
+
+      {/* 供物台 */}
+      <mesh position={[0, 0.25, 0.7]} castShadow>
+        <boxGeometry args={[1.4, 0.5, 0.5]} />
+        <meshStandardMaterial color={altarStyle.frameColor} roughness={0.5} />
+      </mesh>
+
+      {/* 供物台上の花 */}
+      {[-0.4, -0.15, 0.1, 0.35].map((x, i) => (
+        <mesh key={`table-${i}`} position={[x, 0.55, 0.7]}>
+          <sphereGeometry args={[0.06, 6, 6]} />
+          <meshStandardMaterial color={i % 2 === 0 ? color.main : '#ffffff'} roughness={0.8} />
+        </mesh>
+      ))}
+
+      {/* サイド供花スタンド（豪華版） */}
+      {flowerDensity > 1.2 && [-1, 1].map((side) => (
+        <group key={`stand-${side}`} position={[side * (width / 2 + 0.7), 0, 0.4]}>
+          {/* スタンド */}
+          <mesh position={[0, 0.5, 0]}>
+            <cylinderGeometry args={[0.08, 0.12, 1, 8]} />
+            <meshStandardMaterial color="#333" metalness={0.3} />
+          </mesh>
+          {/* 花のボール */}
+          <mesh position={[0, 1.1, 0]}>
+            <sphereGeometry args={[0.25, 12, 12]} />
+            <meshStandardMaterial color={color.main} roughness={0.7} />
+          </mesh>
+          {/* 周りの小花 */}
+          {Array.from({ length: 8 }).map((_, i) => {
+            const angle = (i / 8) * Math.PI * 2
+            return (
+              <mesh key={i} position={[Math.cos(angle) * 0.2, 1.1 + Math.sin(i) * 0.05, Math.sin(angle) * 0.2]}>
+                <sphereGeometry args={[0.08, 5, 5]} />
+                <meshStandardMaterial color={i % 2 === 0 ? '#ffffff' : color.main} roughness={0.8} />
+              </mesh>
+            )
+          })}
+          {/* リボン */}
+          <mesh position={[0, 0.7, 0.08]}>
+            <boxGeometry args={[0.1, 0.3, 0.02]} />
+            <meshStandardMaterial color="#4a0080" />
           </mesh>
         </group>
       ))}
-
-      {/* 豪華版: サイド供花スタンド */}
-      {flowerDensity > 1.2 && (
-        <>
-          {[-1, 1].map((side) => (
-            <group key={`stand-${side}`} position={[side * (width / 2 + 0.6), 0, 0.3]}>
-              {/* 花器台 */}
-              <mesh position={[0, 0.4, 0]}>
-                <cylinderGeometry args={[0.15, 0.12, 0.8, 12]} />
-                <meshStandardMaterial color={altarStyle.trimColor} metalness={0.4} />
-              </mesh>
-              {/* 花 */}
-              {Array.from({ length: 8 }).map((_, i) => {
-                const angle = (i / 8) * Math.PI * 2
-                return (
-                  <FlowerCluster
-                    key={i}
-                    position={[Math.cos(angle) * 0.1, 0.9 + (i % 3) * 0.08, Math.sin(angle) * 0.1]}
-                    scale={0.08}
-                    color={i % 2 === 0 ? color.main : '#ffffff'}
-                    isMobile={isMobile}
-                  />
-                )
-              })}
-            </group>
-          ))}
-        </>
-      )}
-
-      {/* 祭壇前の供物台 */}
-      <mesh position={[0, 0.25, 0.6]} castShadow>
-        <boxGeometry args={[1.2, 0.5, 0.4]} />
-        <meshStandardMaterial color={altarStyle.woodColor} roughness={0.5} />
-      </mesh>
-      {/* 供物台の上に小さな花 */}
-      {[-0.3, 0, 0.3].map((x, i) => (
-        <FlowerCluster
-          key={`table-${i}`}
-          position={[x, 0.55, 0.6]}
-          scale={0.05}
-          color={i === 1 ? color.main : '#ffffff'}
-          isMobile={isMobile}
-        />
-      ))}
-    </group>
-  )
-}
-
-// 花の塊（菊のような花びら形状）
-function FlowerCluster({ position, scale, color, rotation = [0, 0, 0], isMobile }) {
-  // 花びらの数（パフォーマンス考慮）
-  const petalCount = isMobile ? 5 : 8
-
-  return (
-    <group position={position} rotation={rotation}>
-      {/* 花の中心 */}
-      <mesh>
-        <sphereGeometry args={[scale * 0.35, 6, 6]} />
-        <meshStandardMaterial color="#fffacd" roughness={0.8} />
-      </mesh>
-
-      {/* 花びら - 放射状に配置 */}
-      {Array.from({ length: petalCount }).map((_, i) => {
-        const angle = (i / petalCount) * Math.PI * 2
-        const r = scale * 0.35
-        return (
-          <mesh
-            key={i}
-            position={[Math.cos(angle) * r, 0, Math.sin(angle) * r]}
-            rotation={[0.3, -angle, 0]}
-          >
-            <circleGeometry args={[scale * 0.4, 6]} />
-            <meshStandardMaterial color={color} roughness={0.7} side={2} />
-          </mesh>
-        )
-      })}
-
-      {/* 内側の花びら（2層目）- PCのみ */}
-      {!isMobile && Array.from({ length: petalCount }).map((_, i) => {
-        const angle = (i / petalCount) * Math.PI * 2 + Math.PI / petalCount
-        const r = scale * 0.2
-        return (
-          <mesh
-            key={`inner-${i}`}
-            position={[Math.cos(angle) * r, 0.02, Math.sin(angle) * r]}
-            rotation={[0.4, -angle, 0]}
-          >
-            <circleGeometry args={[scale * 0.3, 5]} />
-            <meshStandardMaterial color={color} roughness={0.7} side={2} />
-          </mesh>
-        )
-      })}
     </group>
   )
 }
