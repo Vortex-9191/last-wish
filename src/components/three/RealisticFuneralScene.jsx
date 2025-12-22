@@ -11,12 +11,12 @@ import { useFuneralStore } from '../../stores/funeralStore'
 import { Map, User, Smartphone, Monitor } from 'lucide-react'
 import { useDevicePerformance } from '../../hooks/useDevicePerformance'
 
-// カラーマップ
+// カラーマップ - より鮮やかな色に
 const flowerColors = {
-  white: { main: '#ffffff', accent: '#f0f0f0' },
-  pink: { main: '#ffb7c5', accent: '#ff91a4' },
-  purple: { main: '#d8bfd8', accent: '#dda0dd' },
-  yellow: { main: '#fffacd', accent: '#ffd700' },
+  white: { main: '#ffffff', accent: '#f5f5f5' },
+  pink: { main: '#ff69b4', accent: '#ff1493' },      // より鮮やかなピンク
+  purple: { main: '#9932cc', accent: '#8b008b' },    // より鮮やかな紫
+  yellow: { main: '#ffd700', accent: '#ffb300' },    // より鮮やかな黄色
 }
 
 // ========== メインコンポーネント ==========
@@ -497,44 +497,138 @@ function FlowerAltar({ width, height, color, theme, flowerDensity = 1, isMobile 
         <meshStandardMaterial color={altarStyle.trimColor} metalness={0.7} roughness={0.3} />
       </mesh>
 
-      {/* 豪華版（flowerDensity > 1）の場合、サイド花を追加 */}
+      {/* 豪華版（flowerDensity > 1）の場合、サイド花スタンドを追加 */}
       {flowerDensity > 1 && (
         <>
           {[-1, 1].map((side) => (
-            <group key={side} position={[side * (width / 2 + 0.3), 0.5, 0]}>
-              {[0, 1, 2].map((i) => (
-                <mesh key={i} position={[0, i * 0.3, 0]}>
-                  <icosahedronGeometry args={[0.15, 1]} />
-                  <meshStandardMaterial color={i % 2 === 0 ? color.main : '#ffffff'} roughness={0.7} />
-                </mesh>
-              ))}
+            <group key={side} position={[side * (width / 2 + 0.4), 0, 0]}>
+              {/* 花器 */}
+              <mesh position={[0, 0.3, 0]}>
+                <cylinderGeometry args={[0.12, 0.08, 0.4, 12]} />
+                <meshStandardMaterial color={altarStyle.trimColor} metalness={0.5} roughness={0.4} />
+              </mesh>
+              {/* 花 */}
+              {[0, 1, 2, 3, 4].map((i) => {
+                const angle = (i / 5) * Math.PI * 2
+                const r = 0.08
+                return (
+                  <SingleFlower
+                    key={i}
+                    position={[Math.cos(angle) * r, 0.55 + i * 0.05, Math.sin(angle) * r]}
+                    scale={0.12}
+                    color={i % 2 === 0 ? color.main : '#ffffff'}
+                    rotation={[Math.random() * 0.3, angle, 0]}
+                  />
+                )
+              })}
             </group>
           ))}
         </>
+      )}
+
+      {/* 控えめ版（flowerDensity < 1）でも最低限の花を表示 */}
+      {flowerDensity < 0.7 && (
+        <group position={[0, height * 0.5, 0.2]}>
+          {[-0.3, 0, 0.3].map((x, i) => (
+            <SingleFlower
+              key={i}
+              position={[x, 0, 0]}
+              scale={0.1}
+              color={i === 1 ? color.main : '#ffffff'}
+            />
+          ))}
+        </group>
       )}
     </group>
   )
 }
 
-// 花の塊（単体の花ではなく塊として表現）
+// 花の塊（菊のような花びら形状）
 function FlowerCluster({ position, scale, color, isMobile }) {
-  const segments = isMobile ? 6 : 10
+  // 花びらの数
+  const petalCount = isMobile ? 6 : 10
 
   return (
     <group position={position}>
-      {/* メインの花塊 */}
+      {/* 花の中心 */}
       <mesh>
-        <icosahedronGeometry args={[scale, isMobile ? 0 : 1]} />
-        <meshStandardMaterial color={color} roughness={0.7} />
+        <sphereGeometry args={[scale * 0.3, 8, 8]} />
+        <meshStandardMaterial color="#fffacd" roughness={0.8} />
       </mesh>
-      {/* 周囲の小さな花 */}
-      {!isMobile && [0, 1, 2, 3].map((i) => {
-        const angle = (i / 4) * Math.PI * 2
-        const r = scale * 0.6
+
+      {/* 花びら - 放射状に配置 */}
+      {Array.from({ length: petalCount }).map((_, i) => {
+        const angle = (i / petalCount) * Math.PI * 2
+        const petalLength = scale * 0.8
+        const x = Math.cos(angle) * petalLength * 0.4
+        const z = Math.sin(angle) * petalLength * 0.4
         return (
-          <mesh key={i} position={[Math.cos(angle) * r, 0, Math.sin(angle) * r]}>
-            <icosahedronGeometry args={[scale * 0.5, 0]} />
-            <meshStandardMaterial color={color} roughness={0.7} />
+          <mesh
+            key={i}
+            position={[x, 0, z]}
+            rotation={[0, -angle, Math.PI / 6]}
+          >
+            <planeGeometry args={[scale * 0.4, scale * 0.7]} />
+            <meshStandardMaterial
+              color={color}
+              roughness={0.6}
+              side={2} // DoubleSide
+            />
+          </mesh>
+        )
+      })}
+
+      {/* 内側の花びら（2層目） */}
+      {!isMobile && Array.from({ length: petalCount }).map((_, i) => {
+        const angle = (i / petalCount) * Math.PI * 2 + Math.PI / petalCount
+        const x = Math.cos(angle) * scale * 0.2
+        const z = Math.sin(angle) * scale * 0.2
+        return (
+          <mesh
+            key={`inner-${i}`}
+            position={[x, 0.02, z]}
+            rotation={[0, -angle, Math.PI / 4]}
+          >
+            <planeGeometry args={[scale * 0.3, scale * 0.5]} />
+            <meshStandardMaterial
+              color={color}
+              roughness={0.6}
+              side={2}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// 単体の花（より詳細な表現）
+function SingleFlower({ position, scale, color, rotation = [0, 0, 0] }) {
+  const petalCount = 8
+
+  return (
+    <group position={position} rotation={rotation}>
+      {/* 中心 */}
+      <mesh>
+        <sphereGeometry args={[scale * 0.15, 6, 6]} />
+        <meshStandardMaterial color="#ffd700" roughness={0.7} />
+      </mesh>
+
+      {/* 花びら */}
+      {Array.from({ length: petalCount }).map((_, i) => {
+        const angle = (i / petalCount) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(angle) * scale * 0.2,
+              0,
+              Math.sin(angle) * scale * 0.2,
+            ]}
+            rotation={[Math.PI / 4, -angle, 0]}
+          >
+            <circleGeometry args={[scale * 0.25, 6]} />
+            <meshStandardMaterial color={color} roughness={0.5} side={2} />
           </mesh>
         )
       })}
@@ -865,22 +959,45 @@ function FlowerStand({ position, color }) {
         <cylinderGeometry args={[0.25, 0.15, 0.15, 12]} />
         <meshStandardMaterial color="#2c1810" />
       </mesh>
-      {/* 花 */}
+
+      {/* 花 - SingleFlowerを使用 */}
       {[0, 1, 2, 3, 4, 5].map((i) => {
         const angle = (i / 6) * Math.PI * 2
-        const r = 0.15
+        const r = 0.12
+        const height = 1.38 + (i % 2) * 0.08
         return (
-          <mesh key={i} position={[Math.cos(angle) * r, 1.4 + Math.random() * 0.1, Math.sin(angle) * r]}>
-            <icosahedronGeometry args={[0.08, 0]} />
-            <meshStandardMaterial color={i % 2 === 0 ? color : '#228b22'} roughness={0.8} />
+          <SingleFlower
+            key={i}
+            position={[Math.cos(angle) * r, height, Math.sin(angle) * r]}
+            scale={0.12}
+            color={i % 2 === 0 ? color : '#ffffff'}
+            rotation={[0.2, angle, 0]}
+          />
+        )
+      })}
+
+      {/* 中央の花 */}
+      <SingleFlower
+        position={[0, 1.5, 0]}
+        scale={0.15}
+        color={color}
+      />
+
+      {/* 葉 */}
+      {[0, 1, 2].map((i) => {
+        const angle = (i / 3) * Math.PI * 2 + 0.3
+        return (
+          <mesh
+            key={`leaf-${i}`}
+            position={[Math.cos(angle) * 0.18, 1.3, Math.sin(angle) * 0.18]}
+            rotation={[0.5, angle, 0]}
+          >
+            <planeGeometry args={[0.08, 0.15]} />
+            <meshStandardMaterial color="#228b22" side={2} />
           </mesh>
         )
       })}
-      {/* 中央の花 */}
-      <mesh position={[0, 1.5, 0]}>
-        <icosahedronGeometry args={[0.1, 0]} />
-        <meshStandardMaterial color={color} roughness={0.8} />
-      </mesh>
+
       {/* リボン */}
       <mesh position={[0, 0.9, 0.1]}>
         <boxGeometry args={[0.08, 0.2, 0.01]} />
