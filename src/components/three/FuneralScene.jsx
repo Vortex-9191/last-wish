@@ -26,6 +26,16 @@ import {
   RealisticChrysanthemum,
   CeremonyChair,
 } from './RealisticModels'
+import {
+  ReceptionDesk,
+  FamilySignboard,
+  TelegramBoard,
+  OfferingDisplay,
+  ReturnGiftTable,
+  ProgramBoard,
+  LargeFlowerStand,
+  CeilingLight,
+} from './FuneralElements'
 
 // Main FuneralScene wrapper component
 export function FuneralScene({ viewMode, setViewMode }) {
@@ -161,9 +171,9 @@ function SceneContent({ viewMode }) {
       {/* Lighting - プラン別 */}
       <SceneLighting theme={theme} planType={planType} config={sceneConfig} />
 
-      {/* Environment */}
-      <fog attach="fog" args={['#050505', 8, sceneConfig.fogDensity]} />
-      <color attach="background" args={['#050505']} />
+      {/* Environment - 明るい式場 */}
+      <fog attach="fog" args={[planType === 'direct' ? '#e8e8e8' : '#1a1a1a', 15, sceneConfig.fogDensity + 20]} />
+      <color attach="background" args={[planType === 'direct' ? '#d0d0d0' : '#1a1a1a']} />
 
       {/* Hall Structure - プラン別サイズ */}
       <HallStructure theme={theme} size={sceneConfig.hallSize} planType={planType} />
@@ -248,6 +258,61 @@ function SceneContent({ viewMode }) {
           {/* ===== 供花スタンド（会社名入り） - 一般葬のみ ===== */}
           {sceneConfig.hasWreaths && (
             <CompanyFlowerStands count={sceneConfig.wreathCount} flowerColor={flowerColor} />
+          )}
+
+          {/* ===== 式場展示物 ===== */}
+
+          {/* 看板（○○家） */}
+          <FamilySignboard position={[0, 2.5, planType === 'family' ? -2.5 : -3.8]} />
+
+          {/* 大型生花スタンド - 祭壇の両脇 */}
+          <LargeFlowerStand position={[planType === 'family' ? -2 : -3, 0, planType === 'family' ? -1.5 : -2.5]} color={colorMap[flowerColor]} />
+          <LargeFlowerStand position={[planType === 'family' ? 2 : 3, 0, planType === 'family' ? -1.5 : -2.5]} color={colorMap[flowerColor]} />
+
+          {/* 供物台 - 一般葬のみ */}
+          {planType === 'general' && (
+            <>
+              <OfferingDisplay position={[-4, 0, -1.5]} type="fruit" />
+              <OfferingDisplay position={[4, 0, -1.5]} type="sweets" />
+              <OfferingDisplay position={[-4.5, 0, -0.5]} type="cans" />
+              <OfferingDisplay position={[4.5, 0, -0.5]} type="fruit" />
+            </>
+          )}
+
+          {/* 弔電掲示板 - 一般葬のみ */}
+          {planType === 'general' && (
+            <TelegramBoard position={[-6, 1.5, 2]} />
+          )}
+
+          {/* 式次第看板 */}
+          <ProgramBoard position={[planType === 'family' ? 3 : 5, 1.2, planType === 'family' ? 1 : 2]} />
+        </>
+      )}
+
+      {/* ===== 受付エリア（直葬以外） ===== */}
+      {planType !== 'direct' && (
+        <>
+          <ReceptionDesk position={[planType === 'family' ? -3 : -5, 0, planType === 'family' ? 4 : 6]} />
+          {planType === 'general' && (
+            <ReceptionDesk position={[5, 0, 6]} side="right" />
+          )}
+        </>
+      )}
+
+      {/* ===== 返礼品コーナー - 一般葬のみ ===== */}
+      {planType === 'general' && (
+        <ReturnGiftTable position={[6, 0, 4]} />
+      )}
+
+      {/* ===== 天井照明 ===== */}
+      {planType !== 'direct' && (
+        <>
+          <CeilingLight position={[0, planType === 'family' ? 5 : 8, 0]} type="chandelier" />
+          {planType === 'general' && (
+            <>
+              <CeilingLight position={[-4, 8, 3]} type="chandelier" />
+              <CeilingLight position={[4, 8, 3]} type="chandelier" />
+            </>
           )}
         </>
       )}
@@ -352,74 +417,105 @@ function WreathArrangement({ count, flowerColor }) {
   )
 }
 
-// Enhanced Lighting - プラン別
+// Enhanced Lighting - プラン別（明るい式場）
 function SceneLighting({ theme, planType, config }) {
-  const warmColor = theme === 'traditional' ? '#ffddaa' : '#fff0dd'
+  const warmColor = theme === 'traditional' ? '#fff8ee' : '#ffffff'
   const isDirect = planType === 'direct'
   const isFamily = planType === 'family'
 
   return (
     <>
-      {/* Soft ambient */}
-      <ambientLight intensity={config?.ambientIntensity || 0.15} color="#ffffff" />
+      {/* 全体を明るく照らすアンビエント */}
+      <ambientLight intensity={isDirect ? 0.8 : 0.6} color="#ffffff" />
 
-      {/* Main key light from above */}
+      {/* メイン天井照明 - 明るく */}
       <spotLight
-        position={[0, isDirect ? 8 : 20, isDirect ? 2 : 5]}
-        angle={Math.PI / 5}
-        penumbra={0.8}
-        intensity={isDirect ? 1.5 : isFamily ? 2.5 : 3}
+        position={[0, isDirect ? 5 : 12, isDirect ? 1 : 0]}
+        angle={Math.PI / 3}
+        penumbra={0.5}
+        intensity={isDirect ? 3 : isFamily ? 5 : 6}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
-        color={isDirect ? '#ffffff' : warmColor}
+        color={warmColor}
       />
 
-      {/* Fill lights from sides - 直葬は控えめ */}
+      {/* 追加の天井照明 */}
       {!isDirect && (
         <>
-          <pointLight position={[isFamily ? -5 : -8, 4, 0]} intensity={isFamily ? 0.3 : 0.5} color="#aaddff" />
-          <pointLight position={[isFamily ? 5 : 8, 4, 0]} intensity={isFamily ? 0.3 : 0.5} color="#ffddaa" />
+          <spotLight
+            position={[-4, 10, 2]}
+            angle={Math.PI / 4}
+            penumbra={0.6}
+            intensity={2}
+            color="#ffffff"
+          />
+          <spotLight
+            position={[4, 10, 2]}
+            angle={Math.PI / 4}
+            penumbra={0.6}
+            intensity={2}
+            color="#ffffff"
+          />
         </>
       )}
 
-      {/* Rim light from back - 直葬以外 */}
-      {!isDirect && (
-        <spotLight
-          position={[0, 8, isFamily ? -5 : -8]}
-          angle={Math.PI / 4}
-          penumbra={0.5}
-          intensity={isFamily ? 1 : 1.5}
-          color="#aaddff"
-        />
-      )}
+      {/* サイド照明 */}
+      <pointLight position={[-6, 4, 0]} intensity={isDirect ? 0.5 : 1} color="#ffffff" distance={15} />
+      <pointLight position={[6, 4, 0]} intensity={isDirect ? 0.5 : 1} color="#ffffff" distance={15} />
 
-      {/* Candle-like point lights - 直葬以外 */}
+      {/* 祭壇を照らすスポット - 直葬以外 */}
       {!isDirect && (
         <>
-          <pointLight position={[isFamily ? -2 : -3, 2, -1.5]} intensity={0.3} color="#ffaa44" distance={5} />
-          <pointLight position={[isFamily ? 2 : 3, 2, -1.5]} intensity={0.3} color="#ffaa44" distance={5} />
+          <spotLight
+            position={[0, 6, -2]}
+            angle={Math.PI / 5}
+            penumbra={0.3}
+            intensity={3}
+            color="#fffaee"
+            target-position={[0, 1, -3]}
+          />
+          {/* 遺影を照らす */}
+          <spotLight
+            position={[0, 4, -1]}
+            angle={Math.PI / 8}
+            penumbra={0.2}
+            intensity={2}
+            color="#ffffff"
+          />
         </>
       )}
 
-      {/* 直葬用の簡素な蛍光灯風ライト */}
+      {/* 蝋燭の暖かい光 - 直葬以外 */}
+      {!isDirect && (
+        <>
+          <pointLight position={[-1, 1.5, -2]} intensity={0.5} color="#ffaa44" distance={3} />
+          <pointLight position={[1, 1.5, -2]} intensity={0.5} color="#ffaa44" distance={3} />
+        </>
+      )}
+
+      {/* 直葬用の蛍光灯 */}
       {isDirect && (
         <>
-          <rectAreaLight position={[0, 3, 0]} width={2} height={0.3} intensity={3} color="#f0f0ff" />
+          <pointLight position={[0, 3.5, 0]} intensity={2} color="#f8f8ff" distance={8} />
+          <pointLight position={[-2, 3.5, 0]} intensity={1} color="#f8f8ff" distance={6} />
+          <pointLight position={[2, 3.5, 0]} intensity={1} color="#f8f8ff" distance={6} />
         </>
       )}
     </>
   )
 }
 
-// Hall Structure (walls, curtains) - プラン別サイズ
+// Hall Structure (walls, curtains) - プラン別サイズ（明るい式場）
 function HallStructure({ theme, size, planType }) {
   const isDirect = planType === 'direct'
 
   // 直葬: シンプルな白い控室
   // 家族葬: 中規模の温かみある式場
   // 一般葬: 大規模な本格式場
-  const wallColor = isDirect ? '#e8e8e8' : theme === 'traditional' ? '#1a1a4a' : '#2a2a2a'
+  // 壁を明るく
+  const wallColor = isDirect ? '#f5f5f5' : theme === 'traditional' ? '#e8e0d0' : '#f0f0f0'
+  const curtainColor = theme === 'traditional' ? '#3a2a5a' : '#2a2a3a'
   const dimensions = {
     small: { width: 8, depth: 8, height: 4, wallZ: -3 },
     medium: { width: 16, depth: 14, height: 6, wallZ: -5 },
@@ -464,17 +560,33 @@ function HallStructure({ theme, size, planType }) {
         </>
       )}
 
-      {/* 一般葬・家族葬: カーテンの垂れ幕 */}
+      {/* 一般葬・家族葬: 背景カーテン・幕 */}
       {!isDirect && (
         <>
-          {/* Decorative drapes */}
-          <mesh position={[-dim.width / 2 + 0.5, dim.height - 0.5, dim.wallZ + 0.1]}>
-            <boxGeometry args={[1, 1, 0.1]} />
-            <meshStandardMaterial color={theme === 'traditional' ? '#4a0080' : '#1a1a1a'} />
+          {/* メイン背景幕（祭壇背後） */}
+          <mesh position={[0, dim.height / 2, dim.wallZ + 0.05]}>
+            <planeGeometry args={[dim.width * 0.8, dim.height * 0.9]} />
+            <meshStandardMaterial color={curtainColor} roughness={0.8} />
           </mesh>
-          <mesh position={[dim.width / 2 - 0.5, dim.height - 0.5, dim.wallZ + 0.1]}>
-            <boxGeometry args={[1, 1, 0.1]} />
-            <meshStandardMaterial color={theme === 'traditional' ? '#4a0080' : '#1a1a1a'} />
+
+          {/* 上部の金縁装飾 */}
+          <mesh position={[0, dim.height * 0.9, dim.wallZ + 0.1]}>
+            <boxGeometry args={[dim.width * 0.85, 0.15, 0.05]} />
+            <meshStandardMaterial color="#d4af37" roughness={0.3} metalness={0.6} />
+          </mesh>
+
+          {/* サイドの垂れ幕 */}
+          {[-1, 1].map((side, i) => (
+            <mesh key={i} position={[side * dim.width * 0.42, dim.height / 2, dim.wallZ + 0.08]}>
+              <boxGeometry args={[0.3, dim.height * 0.85, 0.02]} />
+              <meshStandardMaterial color={theme === 'traditional' ? '#4a0080' : '#2a2a3a'} roughness={0.7} />
+            </mesh>
+          ))}
+
+          {/* 上部の垂れ飾り */}
+          <mesh position={[0, dim.height * 0.85, dim.wallZ + 0.12]}>
+            <boxGeometry args={[dim.width * 0.6, 0.3, 0.02]} />
+            <meshStandardMaterial color={theme === 'traditional' ? '#4a0080' : '#2a2a3a'} roughness={0.7} />
           </mesh>
         </>
       )}
@@ -482,22 +594,33 @@ function HallStructure({ theme, size, planType }) {
   )
 }
 
-// Floor with procedural texture - プラン別
+// Floor with procedural texture - プラン別（明るい床）
 function Floor({ theme, size }) {
   const isDirect = size === 'small'
-  const floorColor = isDirect ? '#c4b8a8' : theme === 'traditional' ? '#2a2a2a' : '#1a1a1a'
+  // 床を明るく - 式場らしいカーペットや木目床
+  const floorColor = isDirect ? '#d4c8b8' : theme === 'traditional' ? '#4a3a2a' : '#5a4a3a'
   const floorSize = size === 'small' ? 12 : size === 'medium' ? 30 : 60
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[floorSize, floorSize]} />
-      <meshStandardMaterial
-        color={floorColor}
-        roughness={isDirect ? 0.6 : 0.1}
-        metalness={isDirect ? 0 : 0.1}
-        envMapIntensity={0.5}
-      />
-    </mesh>
+    <group>
+      {/* メイン床 */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[floorSize, floorSize]} />
+        <meshStandardMaterial
+          color={floorColor}
+          roughness={isDirect ? 0.5 : 0.4}
+          metalness={0}
+        />
+      </mesh>
+
+      {/* 式場では周囲に明るいフローリング */}
+      {!isDirect && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
+          <ringGeometry args={[floorSize * 0.3, floorSize * 0.5, 64]} />
+          <meshStandardMaterial color="#6a5a4a" roughness={0.5} />
+        </mesh>
+      )}
+    </group>
   )
 }
 
