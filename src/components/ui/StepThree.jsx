@@ -1,5 +1,5 @@
 import { CheckCircle, CreditCard, Shield } from 'lucide-react'
-import { useFuneralStore, prices } from '../../stores/funeralStore'
+import { useFuneralStore, prices, planDefinitions } from '../../stores/funeralStore'
 
 export default function StepThree() {
   const {
@@ -16,6 +16,7 @@ export default function StepThree() {
   const totalCost = calculateTotal()
   const outOfPocket = getOutOfPocket()
   const insuranceCoverage = 2000000
+  const currentPlan = planDefinitions[planType] || planDefinitions.plan60
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in">
@@ -34,14 +35,12 @@ export default function StepThree() {
                   1. 基本・会場費
                 </h4>
                 <div className="flex justify-between py-1">
-                  <span className="text-gray-500">葬儀形式</span>
-                  <span className="font-medium">
-                    {planType === 'family' ? '家族葬' : planType === 'oneday' ? '一日葬' : '一般葬'}
-                  </span>
+                  <span className="text-gray-500">選択プラン</span>
+                  <span className="font-medium">{currentPlan.name}</span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-gray-500">基本プラン</span>
-                  <span>¥{prices.base[planType].toLocaleString()}</span>
+                  <span className="text-gray-500">基本料金</span>
+                  <span>¥{currentPlan.price.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-gray-500">祭壇デザイン費</span>

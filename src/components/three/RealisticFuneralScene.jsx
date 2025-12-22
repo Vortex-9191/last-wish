@@ -80,8 +80,11 @@ function LoadingScreen() {
 
 // ========== 葬儀ホール全体 ==========
 // 典礼会館の実際のプランを参考に設定
-// 家族葬: 1.5-3.5m幅、1-2段、20-80万円
-// 一般葬: 3-10m幅、3-5段、50-200万円
+// 直葬: 19.8万円 - 祭壇なし
+// 家族葬45: 45万円 - 小規模祭壇
+// 家族葬60: 60万円 - 中規模祭壇
+// 一般葬100: 100万円 - 大規模祭壇
+// 一般葬140: 140万円 - 特大祭壇
 function FuneralHall({ isMobile }) {
   const { planType, customization } = useFuneralStore()
   const { theme, flowerColor, coffinType, flowerVolume } = customization
@@ -93,7 +96,7 @@ function FuneralHall({ isMobile }) {
 
     switch (planType) {
       case 'direct':
-        // 直葬プラン（約45万円）- 祭壇なし、安置室風
+        // 直葬プラン（19.8万円）- 祭壇なし、安置室風
         return {
           hallWidth: 5,
           hallDepth: 4,
@@ -105,36 +108,82 @@ function FuneralHall({ isMobile }) {
           altarHeight: 0,
           altarTiers: 0,
           flowerDensity: 0,
+          flowerCount: 0,
         }
-      case 'family':
-        // 家族葬プラン（約60万円）- 2段祭壇、幅2.5m
+      case 'plan45':
+        // 家族葬45（45万円）- 1段祭壇、幅1.8m、小規模
+        return {
+          hallWidth: 6,
+          hallDepth: 5,
+          hallHeight: 3,
+          hasAltar: true,
+          altarWidth: 1.8,
+          altarHeight: 1.2,
+          altarTiers: 1,
+          seatRows: 2,
+          seatsPerRow: 4,
+          flowerDensity: 0.8 * volumeMultiplier,
+          flowerCount: 40,
+        }
+      case 'plan60':
+        // 家族葬60（60万円）- 2段祭壇、幅2.5m
         return {
           hallWidth: 8,
           hallDepth: 7,
           hallHeight: 3.5,
           hasAltar: true,
-          altarWidth: 2.5,        // 2.5m幅
-          altarHeight: 1.8,       // 1.8m高さ
-          altarTiers: 2,          // 2段
+          altarWidth: 2.5,
+          altarHeight: 1.8,
+          altarTiers: 2,
           seatRows: 2,
           seatsPerRow: 5,
-          flowerDensity: 1.2 * volumeMultiplier,  // 密度高め
-          flowerCount: 80,        // 花の数
+          flowerDensity: 1.0 * volumeMultiplier,
+          flowerCount: 80,
         }
-      default: // general
-        // 一般葬プラン（約100万円）- 4段祭壇、幅4m
+      case 'plan100':
+        // 一般葬100（100万円）- 3段祭壇、幅4m
         return {
-          hallWidth: 12,
-          hallDepth: 10,
-          hallHeight: 4.5,
+          hallWidth: 11,
+          hallDepth: 9,
+          hallHeight: 4,
           hasAltar: true,
-          altarWidth: 4.5,        // 4.5m幅
-          altarHeight: 2.8,       // 2.8m高さ
-          altarTiers: 4,          // 4段
-          seatRows: 4,
+          altarWidth: 4,
+          altarHeight: 2.4,
+          altarTiers: 3,
+          seatRows: 3,
           seatsPerRow: 7,
-          flowerDensity: 1.5 * volumeMultiplier,  // 密度高め
-          flowerCount: 200,       // 花の数
+          flowerDensity: 1.3 * volumeMultiplier,
+          flowerCount: 150,
+        }
+      case 'plan140':
+        // 一般葬140（140万円）- 4段祭壇、幅5m、特大
+        return {
+          hallWidth: 14,
+          hallDepth: 11,
+          hallHeight: 5,
+          hasAltar: true,
+          altarWidth: 5.5,
+          altarHeight: 3,
+          altarTiers: 4,
+          seatRows: 5,
+          seatsPerRow: 8,
+          flowerDensity: 1.6 * volumeMultiplier,
+          flowerCount: 250,
+        }
+      default:
+        // デフォルトはplan60
+        return {
+          hallWidth: 8,
+          hallDepth: 7,
+          hallHeight: 3.5,
+          hasAltar: true,
+          altarWidth: 2.5,
+          altarHeight: 1.8,
+          altarTiers: 2,
+          seatRows: 2,
+          seatsPerRow: 5,
+          flowerDensity: 1.0 * volumeMultiplier,
+          flowerCount: 80,
         }
     }
   }, [planType, flowerVolume])

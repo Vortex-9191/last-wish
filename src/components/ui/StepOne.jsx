@@ -1,43 +1,118 @@
-import { Users, User, Calendar, ArrowRight } from 'lucide-react'
-import { useFuneralStore } from '../../stores/funeralStore'
+import { Users, User, Flame, Flower2, Crown, ArrowRight, Check } from 'lucide-react'
+import { useFuneralStore, planDefinitions } from '../../stores/funeralStore'
 
+// 典礼会館風プランオプション
 const planOptions = [
-  { id: 'general', title: '一般葬', desc: '知人・近所・会社関係も参列する一般的なお葬式。', icon: Users },
-  { id: 'family', title: '家族葬', desc: '家族・親族のみでゆっくりとお見送りする小規模な形式。', icon: User },
-  { id: 'oneday', title: '一日葬', desc: '通夜を行わず、告別式のみを1日で行う負担の少ない形式。', icon: Calendar },
+  {
+    id: 'direct',
+    icon: Flame,
+    color: 'gray',
+  },
+  {
+    id: 'plan45',
+    icon: User,
+    color: 'blue',
+  },
+  {
+    id: 'plan60',
+    icon: Users,
+    color: 'teal',
+    recommended: true,
+  },
+  {
+    id: 'plan100',
+    icon: Flower2,
+    color: 'purple',
+  },
+  {
+    id: 'plan140',
+    icon: Crown,
+    color: 'amber',
+  },
 ]
 
 export default function StepOne() {
   const { formData, setFormData, planType, setPlanType, nextStep } = useFuneralStore()
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-fade-in">
-      <h2 className="text-2xl font-bold mb-6 text-slate-800">葬儀形式と基本情報</h2>
+    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:p-8 animate-fade-in">
+      <h2 className="text-2xl font-bold mb-2 text-slate-800">葬儀プランを選択</h2>
+      <p className="text-sm text-gray-500 mb-6">ご希望に合わせてプランをお選びください</p>
 
-      {/* 葬儀形式選択 */}
-      <div className="mb-8">
-        <label className="block text-sm font-bold text-gray-700 mb-4">ご希望の葬儀形式</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {planOptions.map(p => (
+      {/* プラン選択 - 典礼会館風 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+        {planOptions.map((option) => {
+          const plan = planDefinitions[option.id]
+          const isSelected = planType === option.id
+          const Icon = option.icon
+
+          return (
             <button
-              key={p.id}
-              onClick={() => setPlanType(p.id)}
-              className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden ${
-                planType === p.id
+              key={option.id}
+              onClick={() => setPlanType(option.id)}
+              className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                isSelected
                   ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-200'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
-              <p.icon className={`mb-3 ${planType === p.id ? 'text-teal-600' : 'text-gray-400'}`} size={24} />
-              <div className="font-bold text-gray-900">{p.title}</div>
-              <div className="text-xs text-gray-500 mt-2 leading-relaxed">{p.desc}</div>
+              {option.recommended && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-teal-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+                  おすすめ
+                </div>
+              )}
+
+              <div className="flex items-center justify-between mb-2">
+                <Icon
+                  className={isSelected ? 'text-teal-600' : 'text-gray-400'}
+                  size={20}
+                />
+                {isSelected && <Check className="text-teal-600" size={16} />}
+              </div>
+
+              <div className="font-bold text-gray-900 text-sm">{plan.name}</div>
+              <div className="text-lg font-bold text-teal-700 mt-1">
+                ¥{(plan.price / 10000).toFixed(0)}万円
+              </div>
+              <div className="text-[11px] text-gray-500 mt-2 leading-relaxed">
+                {plan.description}
+              </div>
+              <div className="text-[10px] text-gray-400 mt-1">
+                {plan.attendees}
+              </div>
             </button>
-          ))}
-        </div>
+          )
+        })}
       </div>
 
+      {/* 選択中プランの詳細 */}
+      {planType && (
+        <div className="bg-slate-50 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-800">
+              {planDefinitions[planType].name} の内容
+            </h3>
+            <span className="text-xs text-gray-500">
+              祭壇: {planDefinitions[planType].altar}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {planDefinitions[planType].features.map((feature, i) => (
+              <span
+                key={i}
+                className="bg-white px-3 py-1 rounded-full text-xs text-gray-600 border"
+              >
+                {feature}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 基本情報入力 */}
-      <div className="space-y-6 pt-6 border-t border-gray-100">
+      <div className="space-y-5 pt-6 border-t border-gray-100">
+        <h3 className="font-bold text-gray-800">基本情報</h3>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">お名前</label>
           <input
@@ -49,7 +124,7 @@ export default function StepOne() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">宗教・宗派</label>
             <select
@@ -65,7 +140,7 @@ export default function StepOne() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">参列者数</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">参列予定人数</label>
             <div className="relative">
               <Users className="absolute left-3 top-3.5 text-gray-400" size={18} />
               <input
@@ -80,12 +155,12 @@ export default function StepOne() {
       </div>
 
       {/* Next Button */}
-      <div className="mt-10 flex justify-end">
+      <div className="mt-8 flex justify-end">
         <button
           onClick={nextStep}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2"
+          className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 shadow-md"
         >
-          次へ：詳細プランニング <ArrowRight size={18} />
+          次へ：カスタマイズ <ArrowRight size={18} />
         </button>
       </div>
     </div>

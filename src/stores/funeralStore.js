@@ -1,11 +1,66 @@
 import { create } from 'zustand'
 
+// 典礼会館風プラン定義
+export const planDefinitions = {
+  direct: {
+    id: 'direct',
+    name: '直葬プラン',
+    price: 198000,
+    description: '火葬のみのシンプルなお見送り',
+    attendees: '~10名',
+    altar: 'なし',
+    features: ['お迎え', 'ご安置', '火葬'],
+  },
+  plan45: {
+    id: 'plan45',
+    name: '家族葬45',
+    price: 450000,
+    description: '家族だけでゆっくりとお別れ',
+    attendees: '~20名',
+    altar: '生花祭壇（小）',
+    features: ['お迎え', 'ご安置', '通夜', '告別式', '火葬'],
+  },
+  plan60: {
+    id: 'plan60',
+    name: '家族葬60',
+    price: 600000,
+    description: '親族や近しい方々とお見送り',
+    attendees: '~30名',
+    altar: '生花祭壇（中）',
+    features: ['お迎え', 'ご安置', '通夜', '告別式', '火葬', '供養'],
+  },
+  plan100: {
+    id: 'plan100',
+    name: '一般葬100',
+    price: 1000000,
+    description: '花の演出を充実させたお葬式',
+    attendees: '~80名',
+    altar: '生花祭壇（大）',
+    features: ['お迎え', 'ご安置', '通夜', '告別式', '火葬', '供養', '返礼品'],
+  },
+  plan140: {
+    id: 'plan140',
+    name: '一般葬140',
+    price: 1400000,
+    description: '華やかで荘厳なワンランク上の葬儀',
+    attendees: '~150名',
+    altar: '生花祭壇（特大）',
+    features: ['お迎え', 'ご安置', '通夜', '告別式', '火葬', '供養', '返礼品', '会食'],
+  },
+}
+
 // 料金表
 export const prices = {
-  base: { general: 800000, family: 450000, oneday: 350000 },
-  theme: { traditional: 0, modern: 150000, nature: 200000 },
+  base: {
+    direct: 198000,
+    plan45: 450000,
+    plan60: 600000,
+    plan100: 1000000,
+    plan140: 1400000,
+  },
+  theme: { traditional: 0, modern: 50000, nature: 80000 },
   coffin: { standard: 0, cloth: 80000, luxury: 350000 },
-  flowerVolume: { minimal: -50000, standard: 0, lavish: 300000 },
+  flowerVolume: { minimal: -30000, standard: 0, lavish: 200000 },
   monk: { 1: 150000, 2: 250000, 3: 400000 },
   kaimyo: { none: 0, shinji: 300000, koji: 500000, in: 1000000 },
   makeup: 100000,
@@ -25,9 +80,9 @@ export const useFuneralStore = create((set, get) => ({
   formData: {
     name: '',
     religion: 'buddhism',
-    attendees: 50,
+    attendees: 30,
   },
-  planType: 'general',
+  planType: 'plan60',  // 典礼会館風デフォルト
 
   // Step 2: カスタマイズ
   customization: {
