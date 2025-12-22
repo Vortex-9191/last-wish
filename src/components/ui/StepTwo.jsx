@@ -1,6 +1,6 @@
 import { Info, Truck } from 'lucide-react'
 import { useFuneralStore, prices } from '../../stores/funeralStore'
-import { FuneralScene } from '../three/FuneralScene'
+import { RealisticFuneralScene } from '../three/RealisticFuneralScene'
 
 export default function StepTwo() {
   const {
@@ -28,16 +28,21 @@ export default function StepTwo() {
   ]
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[85vh] animate-fade-in">
-      {/* Left Panel - Options */}
-      <div className="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 min-h-[calc(100vh-120px)] lg:h-[85vh] animate-fade-in">
+      {/* 3D Viewer - モバイルでは上部に表示 */}
+      <div className="order-1 lg:order-2 lg:col-span-8 bg-black rounded-xl lg:rounded-2xl overflow-hidden shadow-2xl relative ring-1 ring-gray-900/5 h-[40vh] sm:h-[50vh] lg:h-full">
+        <RealisticFuneralScene viewMode={viewMode} setViewMode={setViewMode} />
+      </div>
+
+      {/* Options Panel - モバイルでは下部に表示 */}
+      <div className="order-2 lg:order-1 lg:col-span-4 bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 overflow-x-auto">
+        <div className="flex border-b border-gray-100 overflow-x-auto shrink-0">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`flex-1 py-3 text-xs font-bold px-2 whitespace-nowrap ${
+              className={`flex-1 py-2.5 lg:py-3 text-[11px] lg:text-xs font-bold px-1.5 lg:px-2 whitespace-nowrap ${
                 activeTab === t.id
                   ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
                   : 'text-gray-500 hover:text-gray-700'
@@ -49,7 +54,7 @@ export default function StepTwo() {
         </div>
 
         {/* Tab Content */}
-        <div className="overflow-y-auto flex-1 p-6 pb-20">
+        <div className="overflow-y-auto flex-1 p-4 lg:p-6 pb-4">
           {activeTab === 'venue' && <VenueTab />}
           {activeTab === 'ritual' && <RitualTab />}
           {activeTab === 'items' && <ItemsTab />}
@@ -57,31 +62,26 @@ export default function StepTwo() {
         </div>
 
         {/* Footer - Price Summary */}
-        <div className="bg-slate-50 p-4 rounded-xl -mx-2 mt-2 border-t shrink-0">
+        <div className="bg-slate-50 p-3 lg:p-4 border-t shrink-0">
           <div className="flex justify-between items-end mb-2">
-            <span className="text-sm text-gray-600 font-medium">概算お見積り</span>
-            <span className="text-2xl font-bold text-teal-700">¥{totalCost.toLocaleString()}</span>
+            <span className="text-xs lg:text-sm text-gray-600 font-medium">概算お見積り</span>
+            <span className="text-xl lg:text-2xl font-bold text-teal-700">¥{totalCost.toLocaleString()}</span>
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-2 lg:mt-3">
             <button
               onClick={prevStep}
-              className="px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 font-medium"
+              className="px-3 lg:px-4 py-2.5 lg:py-3 border border-gray-300 rounded-lg text-xs lg:text-sm bg-white hover:bg-gray-50 font-medium"
             >
               戻る
             </button>
             <button
               onClick={nextStep}
-              className="flex-1 py-3 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 shadow-md"
+              className="flex-1 py-2.5 lg:py-3 bg-teal-600 text-white rounded-lg text-xs lg:text-sm font-bold hover:bg-teal-700 shadow-md"
             >
               プラン確認へ進む
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Right Panel - 3D Viewer */}
-      <div className="lg:col-span-8 bg-black rounded-2xl overflow-hidden shadow-2xl relative ring-1 ring-gray-900/5 h-full">
-        <FuneralScene viewMode={viewMode} setViewMode={setViewMode} />
       </div>
     </div>
   )
