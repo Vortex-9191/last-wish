@@ -87,245 +87,455 @@ const colorMap = {
   yellow: '#fffacd',
 }
 
-// Scene content
+// Scene content - プラン別に完全に異なるシーン
 function SceneContent({ viewMode }) {
   const { customization, planType } = useFuneralStore()
   const { theme, flowerColor, coffinType, flowerVolume } = customization
 
+  // プラン別の設定
+  const sceneConfig = useMemo(() => {
+    switch (planType) {
+      case 'direct':
+        // 直葬: 最小限の火葬場控室
+        return {
+          hallSize: 'small',
+          hasAltar: false,
+          hasFlowers: false,
+          hasWreaths: false,
+          hasReligiousItems: false,
+          hasPhotoFrame: true,
+          seatCount: 4,
+          fogDensity: 25,
+          ambientIntensity: 0.2,
+          description: '火葬場控室',
+        }
+      case 'family':
+        // 家族葬: 小規模で温かみのある式場
+        return {
+          hallSize: 'medium',
+          hasAltar: true,
+          altarTiers: 2,
+          hasFlowers: true,
+          flowerCount: 1500,
+          hasWreaths: false,
+          hasReligiousItems: true,
+          hasPhotoFrame: true,
+          seatCount: 20,
+          fogDensity: 35,
+          ambientIntensity: 0.18,
+          description: '家族葬会館',
+        }
+      case 'general':
+      default:
+        // 一般葬: 大規模な本格式場
+        return {
+          hallSize: 'large',
+          hasAltar: true,
+          altarTiers: 4,
+          hasFlowers: true,
+          flowerCount: 6000,
+          hasWreaths: true,
+          wreathCount: 8,
+          hasReligiousItems: true,
+          hasPhotoFrame: true,
+          seatCount: 60,
+          fogDensity: 45,
+          ambientIntensity: 0.15,
+          description: '大型葬儀会館',
+        }
+    }
+  }, [planType])
+
   return (
     <>
-      {/* Lighting */}
-      <SceneLighting theme={theme} />
+      {/* Lighting - プラン別 */}
+      <SceneLighting theme={theme} planType={planType} config={sceneConfig} />
 
       {/* Environment */}
-      <fog attach="fog" args={['#050505', 8, 40]} />
+      <fog attach="fog" args={['#050505', 8, sceneConfig.fogDensity]} />
       <color attach="background" args={['#050505']} />
 
-      {/* Hall Structure */}
-      <HallStructure theme={theme} />
+      {/* Hall Structure - プラン別サイズ */}
+      <HallStructure theme={theme} size={sceneConfig.hallSize} planType={planType} />
 
       {/* Floor */}
-      <Floor theme={theme} />
+      <Floor theme={theme} size={sceneConfig.hallSize} />
 
-      {/* Carpet */}
-      <Carpet />
+      {/* Carpet - 直葬以外 */}
+      {planType !== 'direct' && <Carpet size={sceneConfig.hallSize} />}
 
-      {/* Altar */}
-      <Altar theme={theme} />
+      {/* ========== 直葬専用シーン ========== */}
+      {planType === 'direct' && (
+        <DirectCremationScene coffinType={coffinType} />
+      )}
 
-      {/* Flowers */}
-      <FlowerArrangement color={flowerColor} volume={flowerVolume} theme={theme} />
+      {/* ========== 家族葬・一般葬共通要素 ========== */}
+      {planType !== 'direct' && (
+        <>
+          {/* Altar - 段数がプラン別 */}
+          <Altar theme={theme} tiers={sceneConfig.altarTiers} size={sceneConfig.hallSize} />
 
-      {/* Coffin */}
-      <Coffin type={coffinType} />
+          {/* Coffin */}
+          <Coffin type={coffinType} />
 
-      {/* Photo Frame */}
-      <PhotoFrame />
+          {/* Photo Frame */}
+          <PhotoFrame size={sceneConfig.hallSize} />
 
-      {/* Candles */}
-      <Candles theme={theme} />
+          {/* Flowers - プラン別ボリューム */}
+          {sceneConfig.hasFlowers && (
+            <FlowerArrangement
+              color={flowerColor}
+              volume={flowerVolume}
+              theme={theme}
+              count={sceneConfig.flowerCount}
+            />
+          )}
 
-      {/* Incense Burner */}
-      <IncenseBurner />
+          {/* Candles */}
+          <Candles theme={theme} count={planType === 'family' ? 2 : 4} />
 
-      {/* === 詳細なプロシージャルモデル === */}
+          {/* Incense Burner */}
+          <IncenseBurner />
 
-      {/* 位牌 (Memorial Tablet) */}
-      <MemorialTablet position={[0, 2.1, -4.3]} />
+          {/* 宗教用品 */}
+          {sceneConfig.hasReligiousItems && (
+            <>
+              <MemorialTablet position={[0, planType === 'family' ? 1.5 : 2.1, planType === 'family' ? -3.3 : -4.3]} />
+              <BuddhistBell position={[-1.2, planType === 'family' ? 0.8 : 1.2, planType === 'family' ? -2.8 : -3.5]} />
+              {planType === 'general' && <BuddhistBell position={[1.2, 1.2, -3.5]} />}
+              <Offerings position={[planType === 'family' ? -1.8 : -2.5, planType === 'family' ? 0.8 : 1.2, planType === 'family' ? -2.5 : -3.2]} />
+              {planType === 'general' && <Offerings position={[2.5, 1.2, -3.2]} />}
+              <CandleStick position={[-0.8, planType === 'family' ? 1.2 : 1.7, planType === 'family' ? -3.0 : -3.8]} height={0.25} />
+              <CandleStick position={[0.8, planType === 'family' ? 1.2 : 1.7, planType === 'family' ? -3.0 : -3.8]} height={0.25} />
+            </>
+          )}
 
-      {/* りん (Buddhist Bell) */}
-      <BuddhistBell position={[-1.5, 1.2, -3.5]} />
-      <BuddhistBell position={[1.5, 1.2, -3.5]} />
+          {/* 焼香台 */}
+          <IncenseTable position={[0, 0, planType === 'family' ? 2.5 : 3.5]} />
 
-      {/* 供物 (Offerings) */}
-      <Offerings position={[-2.5, 1.2, -3.2]} />
-      <Offerings position={[2.5, 1.2, -3.2]} />
+          {/* 花輪スタンド - 一般葬のみ */}
+          {sceneConfig.hasWreaths && (
+            <WreathArrangement count={sceneConfig.wreathCount} flowerColor={flowerColor} />
+          )}
 
-      {/* 蝋燭 (詳細版) */}
-      <CandleStick position={[-1, 1.7, -3.8]} height={0.25} />
-      <CandleStick position={[1, 1.7, -3.8]} height={0.25} />
+          {/* 菊の花装飾 */}
+          <ChrysanthemumArrangement color={flowerColor} theme={theme} count={planType === 'family' ? 15 : 30} />
+        </>
+      )}
 
-      {/* 線香台 (焼香台) - 参列者用 */}
-      <IncenseTable position={[0, 0, 3.5]} />
+      {/* Seating - プラン別 */}
+      <Seating planType={planType} count={sceneConfig.seatCount} />
 
-      {/* 花輪スタンド - 両サイド */}
-      <FlowerWreathStand position={[-5.5, 0, -2]} color={colorMap[flowerColor]} />
-      <FlowerWreathStand position={[5.5, 0, -2]} color={colorMap[flowerColor]} />
-      <FlowerWreathStand position={[-5.5, 0, 0]} color="#ffffff" />
-      <FlowerWreathStand position={[5.5, 0, 0]} color="#ffffff" />
+      {/* Particles - 一般葬のみ */}
+      {planType === 'general' && <Particles />}
 
-      {/* 菊の花 (祭壇装飾) */}
-      <ChrysanthemumArrangement color={flowerColor} theme={theme} />
-
-      {/* Seating */}
-      <Seating planType={planType} />
-
-      {/* Particles */}
-      <Particles />
-
-      {/* God Rays */}
-      <GodRays />
+      {/* God Rays - 一般葬のみ */}
+      {planType === 'general' && <GodRays />}
 
       {/* Contact Shadows */}
       <ContactShadows
         position={[0, 0.01, 0]}
         opacity={0.5}
-        scale={40}
+        scale={sceneConfig.hallSize === 'large' ? 40 : sceneConfig.hallSize === 'medium' ? 25 : 15}
         blur={2.5}
         far={12}
       />
 
       {/* Camera Controls */}
-      <CameraController viewMode={viewMode} />
+      <CameraController viewMode={viewMode} planType={planType} />
 
       {/* Post Processing */}
       <EffectComposer>
-        <Bloom luminanceThreshold={0.8} intensity={0.4} radius={0.8} />
-        <Vignette eskil={false} offset={0.1} darkness={0.6} />
+        <Bloom luminanceThreshold={0.8} intensity={planType === 'direct' ? 0.2 : 0.4} radius={0.8} />
+        <Vignette eskil={false} offset={0.1} darkness={planType === 'direct' ? 0.8 : 0.6} />
       </EffectComposer>
     </>
   )
 }
 
-// Enhanced Lighting
-function SceneLighting({ theme }) {
-  const warmColor = theme === 'traditional' ? '#ffddaa' : '#fff0dd'
-
-  return (
-    <>
-      {/* Soft ambient */}
-      <ambientLight intensity={0.15} color="#ffffff" />
-
-      {/* Main key light from above */}
-      <spotLight
-        position={[0, 20, 5]}
-        angle={Math.PI / 5}
-        penumbra={0.8}
-        intensity={3}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0001}
-        color={warmColor}
-      />
-
-      {/* Fill lights from sides */}
-      <pointLight position={[-8, 4, 0]} intensity={0.5} color="#aaddff" />
-      <pointLight position={[8, 4, 0]} intensity={0.5} color="#ffddaa" />
-
-      {/* Rim light from back */}
-      <spotLight
-        position={[0, 8, -8]}
-        angle={Math.PI / 4}
-        penumbra={0.5}
-        intensity={1.5}
-        color="#aaddff"
-      />
-
-      {/* Candle-like point lights */}
-      <pointLight position={[-3, 2, -1.5]} intensity={0.3} color="#ffaa44" distance={5} />
-      <pointLight position={[3, 2, -1.5]} intensity={0.3} color="#ffaa44" distance={5} />
-    </>
-  )
-}
-
-// Hall Structure (walls, curtains)
-function HallStructure({ theme }) {
-  const curtainColor = theme === 'traditional' ? '#1a1a4a' : '#2a2a2a'
-
+// ========== 直葬専用シーン ==========
+function DirectCremationScene({ coffinType }) {
   return (
     <group>
-      {/* Back wall/curtain */}
-      <mesh position={[0, 5, -6]} receiveShadow>
-        <planeGeometry args={[30, 12]} />
-        <meshStandardMaterial color={curtainColor} roughness={0.9} />
+      {/* シンプルな棺のみ - 中央に配置 */}
+      <group position={[0, 0.2, 0]}>
+        <Coffin type={coffinType} />
+      </group>
+
+      {/* 簡素な台 */}
+      <mesh position={[0, 0.1, 0]} receiveShadow>
+        <boxGeometry args={[2.5, 0.2, 1.2]} />
+        <meshStandardMaterial color="#3a3a3a" roughness={0.8} />
       </mesh>
 
-      {/* Side curtains */}
-      <mesh position={[-12, 5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[20, 12]} />
-        <meshStandardMaterial color={curtainColor} roughness={0.9} side={THREE.DoubleSide} />
+      {/* 小さな花束（オプション） */}
+      <group position={[0.8, 0.35, 0.4]}>
+        {[0, 1, 2].map((i) => (
+          <Chrysanthemum
+            key={i}
+            position={[i * 0.08 - 0.08, 0, 0]}
+            scale={0.5}
+            color="#ffffff"
+          />
+        ))}
+      </group>
+
+      {/* 壁のシンプルな時計 */}
+      <mesh position={[0, 2, -2.8]} castShadow>
+        <cylinderGeometry args={[0.25, 0.25, 0.05, 32]} rotation={[Math.PI / 2, 0, 0]} />
+        <meshStandardMaterial color="#333333" />
       </mesh>
-      <mesh position={[12, 5, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[20, 12]} />
-        <meshStandardMaterial color={curtainColor} roughness={0.9} side={THREE.DoubleSide} />
+      <mesh position={[0, 2, -2.75]}>
+        <circleGeometry args={[0.22, 32]} />
+        <meshBasicMaterial color="#ffffff" />
       </mesh>
     </group>
   )
 }
 
-// Floor with procedural texture
-function Floor({ theme }) {
-  const floorColor = theme === 'traditional' ? '#2a2a2a' : '#1a1a1a'
+// ========== 花輪配置 ==========
+function WreathArrangement({ count, flowerColor }) {
+  const positions = useMemo(() => {
+    const result = []
+    const perSide = Math.floor(count / 2)
+
+    for (let i = 0; i < perSide; i++) {
+      // 左側
+      result.push({
+        position: [-6, 0, -3 + i * 1.8],
+        color: i % 2 === 0 ? colorMap[flowerColor] : '#ffffff'
+      })
+      // 右側
+      result.push({
+        position: [6, 0, -3 + i * 1.8],
+        color: i % 2 === 0 ? '#ffffff' : colorMap[flowerColor]
+      })
+    }
+    return result
+  }, [count, flowerColor])
+
+  return (
+    <group>
+      {positions.map((wreath, i) => (
+        <FlowerWreathStand key={i} position={wreath.position} color={wreath.color} />
+      ))}
+    </group>
+  )
+}
+
+// Enhanced Lighting - プラン別
+function SceneLighting({ theme, planType, config }) {
+  const warmColor = theme === 'traditional' ? '#ffddaa' : '#fff0dd'
+  const isDirect = planType === 'direct'
+  const isFamily = planType === 'family'
+
+  return (
+    <>
+      {/* Soft ambient */}
+      <ambientLight intensity={config?.ambientIntensity || 0.15} color="#ffffff" />
+
+      {/* Main key light from above */}
+      <spotLight
+        position={[0, isDirect ? 8 : 20, isDirect ? 2 : 5]}
+        angle={Math.PI / 5}
+        penumbra={0.8}
+        intensity={isDirect ? 1.5 : isFamily ? 2.5 : 3}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0001}
+        color={isDirect ? '#ffffff' : warmColor}
+      />
+
+      {/* Fill lights from sides - 直葬は控えめ */}
+      {!isDirect && (
+        <>
+          <pointLight position={[isFamily ? -5 : -8, 4, 0]} intensity={isFamily ? 0.3 : 0.5} color="#aaddff" />
+          <pointLight position={[isFamily ? 5 : 8, 4, 0]} intensity={isFamily ? 0.3 : 0.5} color="#ffddaa" />
+        </>
+      )}
+
+      {/* Rim light from back - 直葬以外 */}
+      {!isDirect && (
+        <spotLight
+          position={[0, 8, isFamily ? -5 : -8]}
+          angle={Math.PI / 4}
+          penumbra={0.5}
+          intensity={isFamily ? 1 : 1.5}
+          color="#aaddff"
+        />
+      )}
+
+      {/* Candle-like point lights - 直葬以外 */}
+      {!isDirect && (
+        <>
+          <pointLight position={[isFamily ? -2 : -3, 2, -1.5]} intensity={0.3} color="#ffaa44" distance={5} />
+          <pointLight position={[isFamily ? 2 : 3, 2, -1.5]} intensity={0.3} color="#ffaa44" distance={5} />
+        </>
+      )}
+
+      {/* 直葬用の簡素な蛍光灯風ライト */}
+      {isDirect && (
+        <>
+          <rectAreaLight position={[0, 3, 0]} width={2} height={0.3} intensity={3} color="#f0f0ff" />
+        </>
+      )}
+    </>
+  )
+}
+
+// Hall Structure (walls, curtains) - プラン別サイズ
+function HallStructure({ theme, size, planType }) {
+  const isDirect = planType === 'direct'
+
+  // 直葬: シンプルな白い控室
+  // 家族葬: 中規模の温かみある式場
+  // 一般葬: 大規模な本格式場
+  const wallColor = isDirect ? '#e8e8e8' : theme === 'traditional' ? '#1a1a4a' : '#2a2a2a'
+  const dimensions = {
+    small: { width: 8, depth: 8, height: 4, wallZ: -3 },
+    medium: { width: 16, depth: 14, height: 6, wallZ: -5 },
+    large: { width: 30, depth: 20, height: 10, wallZ: -6 },
+  }
+  const dim = dimensions[size] || dimensions.large
+
+  return (
+    <group>
+      {/* Back wall */}
+      <mesh position={[0, dim.height / 2, dim.wallZ]} receiveShadow>
+        <planeGeometry args={[dim.width, dim.height]} />
+        <meshStandardMaterial
+          color={wallColor}
+          roughness={isDirect ? 0.3 : 0.9}
+        />
+      </mesh>
+
+      {/* Side walls */}
+      <mesh position={[-dim.width / 2, dim.height / 2, dim.depth / 4]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
+        <planeGeometry args={[dim.depth, dim.height]} />
+        <meshStandardMaterial color={wallColor} roughness={isDirect ? 0.3 : 0.9} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[dim.width / 2, dim.height / 2, dim.depth / 4]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
+        <planeGeometry args={[dim.depth, dim.height]} />
+        <meshStandardMaterial color={wallColor} roughness={isDirect ? 0.3 : 0.9} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* 直葬: 窓とドア */}
+      {isDirect && (
+        <>
+          {/* 窓 */}
+          <mesh position={[2.5, 2, -2.95]}>
+            <planeGeometry args={[1.5, 1.2]} />
+            <meshBasicMaterial color="#87ceeb" opacity={0.7} transparent />
+          </mesh>
+          {/* ドア */}
+          <mesh position={[-3, 1.2, dim.depth / 4 - 0.1]} rotation={[0, Math.PI / 2, 0]}>
+            <planeGeometry args={[1.8, 2.4]} />
+            <meshStandardMaterial color="#8b7355" roughness={0.5} />
+          </mesh>
+        </>
+      )}
+
+      {/* 一般葬・家族葬: カーテンの垂れ幕 */}
+      {!isDirect && (
+        <>
+          {/* Decorative drapes */}
+          <mesh position={[-dim.width / 2 + 0.5, dim.height - 0.5, dim.wallZ + 0.1]}>
+            <boxGeometry args={[1, 1, 0.1]} />
+            <meshStandardMaterial color={theme === 'traditional' ? '#4a0080' : '#1a1a1a'} />
+          </mesh>
+          <mesh position={[dim.width / 2 - 0.5, dim.height - 0.5, dim.wallZ + 0.1]}>
+            <boxGeometry args={[1, 1, 0.1]} />
+            <meshStandardMaterial color={theme === 'traditional' ? '#4a0080' : '#1a1a1a'} />
+          </mesh>
+        </>
+      )}
+    </group>
+  )
+}
+
+// Floor with procedural texture - プラン別
+function Floor({ theme, size }) {
+  const isDirect = size === 'small'
+  const floorColor = isDirect ? '#c4b8a8' : theme === 'traditional' ? '#2a2a2a' : '#1a1a1a'
+  const floorSize = size === 'small' ? 12 : size === 'medium' ? 30 : 60
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[60, 60]} />
+      <planeGeometry args={[floorSize, floorSize]} />
       <meshStandardMaterial
         color={floorColor}
-        roughness={0.1}
-        metalness={0.1}
+        roughness={isDirect ? 0.6 : 0.1}
+        metalness={isDirect ? 0 : 0.1}
         envMapIntensity={0.5}
       />
     </mesh>
   )
 }
 
-// Carpet
-function Carpet() {
+// Carpet - プラン別
+function Carpet({ size }) {
+  const carpetLength = size === 'medium' ? 12 : 20
+  const carpetWidth = size === 'medium' ? 2 : 3
+
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 2]} receiveShadow>
-      <planeGeometry args={[3, 20]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, size === 'medium' ? 1 : 2]} receiveShadow>
+      <planeGeometry args={[carpetWidth, carpetLength]} />
       <meshStandardMaterial color="#660022" roughness={0.95} />
     </mesh>
   )
 }
 
-// Enhanced Altar with multiple tiers
-function Altar({ theme }) {
+// Enhanced Altar with multiple tiers - プラン別
+function Altar({ theme, tiers = 4, size = 'large' }) {
   const woodColor = theme === 'traditional' ? '#8b6914' : '#4a4a4a'
   const clothColor = theme === 'traditional' ? '#1a1a4a' : '#2a2a2a'
   const goldColor = '#d4af37'
 
+  const isFamily = size === 'medium'
+  const scale = isFamily ? 0.65 : 1
+  const posZ = isFamily ? -2.5 : -3
+
+  // 祭壇の段数に応じた構成
+  const tierConfigs = {
+    2: [
+      { y: 0.3, z: 0, width: 8, depth: 3, height: 0.5 },
+      { y: 0.8, z: -0.3, width: 5, depth: 2, height: 0.4 },
+    ],
+    4: [
+      { y: 0.3, z: 0, width: 14, depth: 5, height: 0.6 },
+      { y: 0.9, z: -0.5, width: 12, depth: 4, height: 0.5 },
+      { y: 1.4, z: -1, width: 10, depth: 3, height: 0.4 },
+      { y: 1.9, z: -1.3, width: 4, depth: 2, height: 0.3 },
+    ],
+  }
+
+  const tierConfig = tierConfigs[tiers] || tierConfigs[4]
+  const pillarX = isFamily ? 3.5 : 6.5
+
   return (
-    <group position={[0, 0, -3]}>
-      {/* Main altar base */}
-      <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
-        <boxGeometry args={[14, 0.6, 5]} />
-        <meshStandardMaterial color={woodColor} roughness={0.4} metalness={0.1} />
-      </mesh>
-
-      {/* Second tier */}
-      <mesh position={[0, 0.9, -0.5]} castShadow receiveShadow>
-        <boxGeometry args={[12, 0.5, 4]} />
-        <meshStandardMaterial color={woodColor} roughness={0.4} metalness={0.1} />
-      </mesh>
-
-      {/* Third tier */}
-      <mesh position={[0, 1.4, -1]} castShadow receiveShadow>
-        <boxGeometry args={[10, 0.4, 3]} />
-        <meshStandardMaterial color={woodColor} roughness={0.4} metalness={0.1} />
-      </mesh>
-
-      {/* Top tier for photo */}
-      <mesh position={[0, 1.9, -1.3]} castShadow receiveShadow>
-        <boxGeometry args={[4, 0.3, 2]} />
-        <meshStandardMaterial color={woodColor} roughness={0.4} metalness={0.1} />
-      </mesh>
+    <group position={[0, 0, posZ]} scale={[scale, scale, scale]}>
+      {/* Altar tiers */}
+      {tierConfig.map((tier, i) => (
+        <mesh key={i} position={[0, tier.y, tier.z]} castShadow receiveShadow>
+          <boxGeometry args={[tier.width, tier.height, tier.depth]} />
+          <meshStandardMaterial color={woodColor} roughness={0.4} metalness={0.1} />
+        </mesh>
+      ))}
 
       {/* Decorative cloth draping */}
-      <mesh position={[0, 0.62, 2.4]} castShadow>
-        <boxGeometry args={[14.2, 0.02, 0.8]} />
+      <mesh position={[0, 0.62, tierConfig[0].depth / 2 - 0.1]} castShadow>
+        <boxGeometry args={[tierConfig[0].width + 0.2, 0.02, 0.8]} />
         <meshStandardMaterial color={clothColor} roughness={0.8} />
       </mesh>
 
       {/* Gold trim */}
-      <mesh position={[0, 0.63, 2.45]}>
-        <boxGeometry args={[14.2, 0.015, 0.1]} />
+      <mesh position={[0, 0.63, tierConfig[0].depth / 2 - 0.05]}>
+        <boxGeometry args={[tierConfig[0].width + 0.2, 0.015, 0.1]} />
         <meshStandardMaterial color={goldColor} roughness={0.3} metalness={0.8} />
       </mesh>
 
-      {/* Side decorations */}
-      {[-6.5, 6.5].map((x, i) => (
+      {/* Side decorations - 一般葬のみ柱を追加 */}
+      {!isFamily && [-pillarX, pillarX].map((x, i) => (
         <group key={i} position={[x, 0, 0]}>
           {/* Pillar */}
           <mesh position={[0, 1.5, 0]} castShadow>
@@ -339,13 +549,28 @@ function Altar({ theme }) {
           </mesh>
         </group>
       ))}
+
+      {/* 家族葬: シンプルな花立て */}
+      {isFamily && (
+        <>
+          <mesh position={[-2.5, 0.7, 0.5]} castShadow>
+            <cylinderGeometry args={[0.15, 0.1, 0.4, 16]} />
+            <meshStandardMaterial color={goldColor} roughness={0.3} metalness={0.7} />
+          </mesh>
+          <mesh position={[2.5, 0.7, 0.5]} castShadow>
+            <cylinderGeometry args={[0.15, 0.1, 0.4, 16]} />
+            <meshStandardMaterial color={goldColor} roughness={0.3} metalness={0.7} />
+          </mesh>
+        </>
+      )}
     </group>
   )
 }
 
-// Improved Flower Arrangement
-function FlowerArrangement({ color, volume, theme }) {
-  const count = volume === 'minimal' ? 2000 : volume === 'lavish' ? 8000 : 4000
+// Improved Flower Arrangement - プラン別
+function FlowerArrangement({ color, volume, theme, count: propCount }) {
+  const baseCount = volume === 'minimal' ? 2000 : volume === 'lavish' ? 8000 : 4000
+  const count = propCount || baseCount
 
   const meshRef = useRef()
   const initialized = useRef(false)
@@ -536,10 +761,16 @@ function Coffin({ type }) {
 }
 
 // Photo Frame with elegant design
-function PhotoFrame() {
+// PhotoFrame - プラン別サイズ
+function PhotoFrame({ size = 'large' }) {
+  const isFamily = size === 'medium'
+  const scale = isFamily ? 0.7 : 1
+  const posY = isFamily ? 2.2 : 3.2
+  const posZ = isFamily ? -3.2 : -4
+
   return (
     <Float speed={0.3} rotationIntensity={0} floatIntensity={0.1}>
-      <group position={[0, 3.2, -4]}>
+      <group position={[0, posY, posZ]} scale={[scale, scale, scale]}>
         {/* Outer frame */}
         <mesh castShadow>
           <boxGeometry args={[1.6, 2.0, 0.15]} />
@@ -558,6 +789,16 @@ function PhotoFrame() {
           <meshBasicMaterial color="#e8e8e8" />
         </mesh>
 
+        {/* Black ribbon */}
+        <mesh position={[0.55, 0.7, 0.1]} rotation={[0, 0, -0.5]}>
+          <boxGeometry args={[0.3, 0.04, 0.01]} />
+          <meshStandardMaterial color="#000000" roughness={0.9} />
+        </mesh>
+        <mesh position={[0.65, 0.55, 0.1]} rotation={[0, 0, 0.5]}>
+          <boxGeometry args={[0.3, 0.04, 0.01]} />
+          <meshStandardMaterial color="#000000" roughness={0.9} />
+        </mesh>
+
         {/* Subtle glow behind frame */}
         <mesh position={[0, 0, -0.1]}>
           <planeGeometry args={[2, 2.4]} />
@@ -568,11 +809,18 @@ function PhotoFrame() {
   )
 }
 
-// Candles with animated flames
-function Candles({ theme }) {
-  const candlePositions = theme === 'traditional'
-    ? [[-4, 0.8, -2], [4, 0.8, -2], [-2.5, 1.5, -3], [2.5, 1.5, -3]]
-    : [[-3, 0.8, -2], [3, 0.8, -2]]
+// Candles with animated flames - プラン別
+function Candles({ theme, count = 4 }) {
+  const candlePositions = useMemo(() => {
+    if (count === 2) {
+      // 家族葬: 2本のみ
+      return [[-2, 0.6, -2], [2, 0.6, -2]]
+    }
+    // 一般葬: 4本
+    return theme === 'traditional'
+      ? [[-4, 0.8, -2], [4, 0.8, -2], [-2.5, 1.5, -3], [2.5, 1.5, -3]]
+      : [[-3, 0.8, -2], [3, 0.8, -2], [-1.5, 1.3, -2.5], [1.5, 1.3, -2.5]]
+  }, [theme, count])
 
   return (
     <group>
@@ -663,33 +911,95 @@ function IncenseBurner() {
 }
 
 // Improved Seating with chair shapes
-function Seating({ planType }) {
-  const rows = planType === 'family' ? 2 : 4
-  const cols = planType === 'family' ? 6 : 10
+// Seating - プラン別
+function Seating({ planType, count }) {
+  const isDirect = planType === 'direct'
+  const isFamily = planType === 'family'
 
   const chairs = useMemo(() => {
     const result = []
-    for (let r = 0; r < rows; r++) {
-      for (let c = -cols / 2; c < cols / 2; c++) {
-        if (Math.abs(c + 0.5) < 1) continue // Aisle
+
+    if (isDirect) {
+      // 直葬: 壁際に並べた簡易椅子（パイプ椅子風）
+      for (let i = 0; i < (count || 4); i++) {
         result.push({
-          position: [(c + 0.5) * 1.2, 0, 5 + r * 1.3],
+          position: [-2 + i * 1.2, 0, 2],
+          type: 'folding'
         })
+      }
+    } else if (isFamily) {
+      // 家族葬: 2列の椅子、少人数
+      const rows = 2
+      const cols = Math.ceil((count || 20) / rows / 2)
+      for (let r = 0; r < rows; r++) {
+        for (let c = -cols / 2; c < cols / 2; c++) {
+          if (Math.abs(c + 0.5) < 0.8) continue // 通路
+          result.push({
+            position: [(c + 0.5) * 1.0, 0, 3.5 + r * 1.1],
+            type: 'standard'
+          })
+        }
+      }
+    } else {
+      // 一般葬: 4列以上、多人数
+      const rows = 4
+      const cols = Math.ceil((count || 60) / rows / 2)
+      for (let r = 0; r < rows; r++) {
+        for (let c = -cols / 2; c < cols / 2; c++) {
+          if (Math.abs(c + 0.5) < 1) continue // 通路
+          result.push({
+            position: [(c + 0.5) * 1.2, 0, 5 + r * 1.3],
+            type: 'standard'
+          })
+        }
       }
     }
     return result
-  }, [rows, cols])
+  }, [isDirect, isFamily, count])
 
   return (
     <group>
       {chairs.map((chair, i) => (
-        <Chair key={i} position={chair.position} />
+        <Chair key={i} position={chair.position} type={chair.type} />
       ))}
     </group>
   )
 }
 
-function Chair({ position }) {
+function Chair({ position, type = 'standard' }) {
+  // 直葬用パイプ椅子
+  if (type === 'folding') {
+    return (
+      <group position={position}>
+        {/* 座面 */}
+        <mesh position={[0, 0.42, 0]} castShadow>
+          <boxGeometry args={[0.38, 0.02, 0.35]} />
+          <meshStandardMaterial color="#555555" roughness={0.5} />
+        </mesh>
+        {/* 背もたれ */}
+        <mesh position={[0, 0.7, -0.15]} castShadow>
+          <boxGeometry args={[0.38, 0.45, 0.02]} />
+          <meshStandardMaterial color="#555555" roughness={0.5} />
+        </mesh>
+        {/* パイプフレーム */}
+        {[[-0.15, 0.2], [0.15, 0.2]].map(([x, z], i) => (
+          <mesh key={i} position={[x, 0.21, z]} castShadow>
+            <cylinderGeometry args={[0.012, 0.012, 0.42, 8]} />
+            <meshStandardMaterial color="#888888" roughness={0.3} metalness={0.6} />
+          </mesh>
+        ))}
+        {/* 後ろ脚 */}
+        {[[-0.15, -0.15], [0.15, -0.15]].map(([x, z], i) => (
+          <mesh key={i} position={[x, 0.45, z]} rotation={[0.15, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.012, 0.012, 0.9, 8]} />
+            <meshStandardMaterial color="#888888" roughness={0.3} metalness={0.6} />
+          </mesh>
+        ))}
+      </group>
+    )
+  }
+
+  // 通常の葬儀用椅子
   return (
     <group position={position}>
       {/* Seat */}
@@ -789,21 +1099,39 @@ function GodRays() {
   )
 }
 
-// Camera Controller with smooth transitions
-function CameraController({ viewMode }) {
+// Camera Controller with smooth transitions - プラン別
+function CameraController({ viewMode, planType }) {
   const { camera } = useThree()
   const orbitRef = useRef()
   const targetPos = useRef(new THREE.Vector3())
   const targetLook = useRef(new THREE.Vector3(0, 1.5, -1))
 
+  // プラン別カメラ位置
+  const cameraConfigs = {
+    direct: {
+      orbit: { pos: [0, 3, 6], target: [0, 0.8, 0] },
+      firstPerson: { pos: [0, 1.2, 4], look: [0, 0.8, 0] }
+    },
+    family: {
+      orbit: { pos: [0, 4, 8], target: [0, 1.2, -1] },
+      firstPerson: { pos: [0, 1.2, 5], look: [0, 1.5, -2] }
+    },
+    general: {
+      orbit: { pos: [0, 6, 12], target: [0, 1.5, -1] },
+      firstPerson: { pos: [0, 1.2, 7], look: [0, 2, -2] }
+    }
+  }
+
+  const config = cameraConfigs[planType] || cameraConfigs.general
+
   useEffect(() => {
     if (viewMode === 'orbit') {
-      targetPos.current.set(0, 6, 12)
+      targetPos.current.set(...config.orbit.pos)
     } else {
-      targetPos.current.set(0, 1.2, 7)
-      targetLook.current.set(0, 2, -2)
+      targetPos.current.set(...config.firstPerson.pos)
+      targetLook.current.set(...config.firstPerson.look)
     }
-  }, [viewMode])
+  }, [viewMode, planType, config])
 
   useFrame(() => {
     camera.position.lerp(targetPos.current, 0.03)
@@ -814,16 +1142,18 @@ function CameraController({ viewMode }) {
     }
   })
 
+  const orbitConfig = config.orbit
+
   return viewMode === 'orbit' ? (
     <OrbitControls
       ref={orbitRef}
       enablePan={false}
       enableZoom={true}
-      minDistance={8}
-      maxDistance={20}
+      minDistance={planType === 'direct' ? 4 : planType === 'family' ? 6 : 8}
+      maxDistance={planType === 'direct' ? 10 : planType === 'family' ? 14 : 20}
       minPolarAngle={Math.PI / 6}
       maxPolarAngle={Math.PI / 2.2}
-      target={[0, 1.5, -1]}
+      target={orbitConfig.target}
       autoRotate
       autoRotateSpeed={0.3}
     />
@@ -840,38 +1170,38 @@ export function useOptionalGLTF(path) {
   }
 }
 
-// Chrysanthemum flower arrangement using procedural flowers
-function ChrysanthemumArrangement({ color, theme }) {
+// Chrysanthemum flower arrangement using procedural flowers - プラン別
+function ChrysanthemumArrangement({ color, theme, count = 30 }) {
   const flowerPositions = useMemo(() => {
     const positions = []
-    const count = 30
+    const isFamily = count < 20
 
     for (let i = 0; i < count; i++) {
       if (theme === 'traditional') {
         // Symmetric arrangement for traditional
         const side = i % 2 === 0 ? -1 : 1
-        const x = side * (1.5 + Math.random() * 2)
-        const y = 1.3 + Math.random() * 1.2
-        const z = -3.5 - Math.random() * 1.5
-        positions.push({ position: [x, y, z], scale: 0.8 + Math.random() * 0.4 })
+        const x = side * (isFamily ? 1 + Math.random() * 1.5 : 1.5 + Math.random() * 2)
+        const y = (isFamily ? 0.9 : 1.3) + Math.random() * (isFamily ? 0.8 : 1.2)
+        const z = (isFamily ? -2.8 : -3.5) - Math.random() * (isFamily ? 1 : 1.5)
+        positions.push({ position: [x, y, z], scale: (isFamily ? 0.6 : 0.8) + Math.random() * 0.4 })
       } else if (theme === 'modern') {
         // Asymmetric wave pattern
-        const x = (Math.random() - 0.5) * 8
+        const x = (Math.random() - 0.5) * (isFamily ? 5 : 8)
         const y = 1 + Math.sin(x * 0.5) * 0.5 + Math.random() * 0.3
-        const z = -3 - Math.random() * 2
+        const z = (isFamily ? -2.5 : -3) - Math.random() * (isFamily ? 1.5 : 2)
         positions.push({ position: [x, y, z], scale: 0.6 + Math.random() * 0.5 })
       } else {
         // Nature - organic scatter
         const angle = Math.random() * Math.PI * 2
-        const radius = 2 + Math.random() * 3
+        const radius = (isFamily ? 1.5 : 2) + Math.random() * (isFamily ? 2 : 3)
         const x = Math.cos(angle) * radius
         const y = 0.8 + Math.random() * 1
-        const z = -3 + Math.sin(angle) * 0.5
+        const z = (isFamily ? -2.5 : -3) + Math.sin(angle) * 0.5
         positions.push({ position: [x, y, z], scale: 0.7 + Math.random() * 0.4 })
       }
     }
     return positions
-  }, [theme])
+  }, [theme, count])
 
   return (
     <group>
