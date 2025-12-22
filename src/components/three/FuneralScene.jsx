@@ -16,6 +16,16 @@ import {
   FlowerWreathStand,
   IncenseTable,
 } from './ProceduralModels'
+import {
+  ShirakiAltar,
+  FlowerAltar,
+  RealisticCoffin,
+  RealisticPortrait,
+  CompanyFlowerStand,
+  IncenseSet,
+  RealisticChrysanthemum,
+  CeremonyChair,
+} from './RealisticModels'
 
 // Main FuneralScene wrapper component
 export function FuneralScene({ viewMode, setViewMode }) {
@@ -172,54 +182,73 @@ function SceneContent({ viewMode }) {
       {/* ========== 家族葬・一般葬共通要素 ========== */}
       {planType !== 'direct' && (
         <>
-          {/* Altar - 段数がプラン別 */}
-          <Altar theme={theme} tiers={sceneConfig.altarTiers} size={sceneConfig.hallSize} />
-
-          {/* Coffin */}
-          <Coffin type={coffinType} />
-
-          {/* Photo Frame */}
-          <PhotoFrame size={sceneConfig.hallSize} />
-
-          {/* Flowers - プラン別ボリューム */}
-          {sceneConfig.hasFlowers && (
-            <FlowerArrangement
-              color={flowerColor}
-              volume={flowerVolume}
-              theme={theme}
-              count={sceneConfig.flowerCount}
+          {/* ===== リアルな祭壇 ===== */}
+          {theme === 'traditional' ? (
+            <ShirakiAltar
+              position={[0, 0, planType === 'family' ? -2 : -3]}
+              tiers={sceneConfig.altarTiers}
             />
+          ) : (
+            <FlowerAltar
+              position={[0, 0, planType === 'family' ? -2 : -3]}
+              flowerColor={colorMap[flowerColor]}
+            />
+          )}
+
+          {/* ===== リアルな棺 ===== */}
+          <RealisticCoffin
+            position={[0, 0.15, planType === 'family' ? 0.8 : 1]}
+            type={coffinType}
+          />
+
+          {/* ===== リアルな遺影 ===== */}
+          <RealisticPortrait
+            position={[0, planType === 'family' ? 1.8 : 2.5, planType === 'family' ? -2.2 : -3.2]}
+            scale={planType === 'family' ? 0.8 : 1}
+          />
+
+          {/* ===== 花の装飾 ===== */}
+          {sceneConfig.hasFlowers && (
+            <>
+              {/* 既存のFlowerArrangement（インスタンス花） */}
+              <FlowerArrangement
+                color={flowerColor}
+                volume={flowerVolume}
+                theme={theme}
+                count={sceneConfig.flowerCount}
+              />
+              {/* リアルな菊の花を追加 */}
+              <RealisticFlowerDecoration
+                color={flowerColor}
+                count={planType === 'family' ? 20 : 50}
+                planType={planType}
+              />
+            </>
           )}
 
           {/* Candles */}
           <Candles theme={theme} count={planType === 'family' ? 2 : 4} />
 
-          {/* Incense Burner */}
-          <IncenseBurner />
+          {/* ===== 焼香セット（リアル版） ===== */}
+          <IncenseSet position={[0, 0, planType === 'family' ? 2 : 3]} />
 
           {/* 宗教用品 */}
           {sceneConfig.hasReligiousItems && (
             <>
-              <MemorialTablet position={[0, planType === 'family' ? 1.5 : 2.1, planType === 'family' ? -3.3 : -4.3]} />
-              <BuddhistBell position={[-1.2, planType === 'family' ? 0.8 : 1.2, planType === 'family' ? -2.8 : -3.5]} />
-              {planType === 'general' && <BuddhistBell position={[1.2, 1.2, -3.5]} />}
-              <Offerings position={[planType === 'family' ? -1.8 : -2.5, planType === 'family' ? 0.8 : 1.2, planType === 'family' ? -2.5 : -3.2]} />
-              {planType === 'general' && <Offerings position={[2.5, 1.2, -3.2]} />}
-              <CandleStick position={[-0.8, planType === 'family' ? 1.2 : 1.7, planType === 'family' ? -3.0 : -3.8]} height={0.25} />
-              <CandleStick position={[0.8, planType === 'family' ? 1.2 : 1.7, planType === 'family' ? -3.0 : -3.8]} height={0.25} />
+              <MemorialTablet position={[0, planType === 'family' ? 1.3 : 1.8, planType === 'family' ? -2.1 : -3.1]} />
+              <BuddhistBell position={[-0.8, planType === 'family' ? 0.5 : 0.8, planType === 'family' ? -1.8 : -2.8]} />
+              {planType === 'general' && <BuddhistBell position={[0.8, 0.8, -2.8]} />}
+              <Offerings position={[planType === 'family' ? -1.2 : -1.8, planType === 'family' ? 0.5 : 0.8, planType === 'family' ? -1.6 : -2.6]} />
+              {planType === 'general' && <Offerings position={[1.8, 0.8, -2.6]} />}
+              <CandleStick position={[-0.5, planType === 'family' ? 0.9 : 1.3, planType === 'family' ? -1.9 : -2.9]} height={0.2} />
+              <CandleStick position={[0.5, planType === 'family' ? 0.9 : 1.3, planType === 'family' ? -1.9 : -2.9]} height={0.2} />
             </>
           )}
 
-          {/* 焼香台 */}
-          <IncenseTable position={[0, 0, planType === 'family' ? 2.5 : 3.5]} />
-
-          {/* 花輪スタンド - 一般葬のみ */}
+          {/* ===== 供花スタンド（会社名入り） - 一般葬のみ ===== */}
           {sceneConfig.hasWreaths && (
-            <WreathArrangement count={sceneConfig.wreathCount} flowerColor={flowerColor} />
+            <CompanyFlowerStands count={sceneConfig.wreathCount} flowerColor={flowerColor} />
           )}
-
-          {/* 菊の花装飾 */}
-          <ChrysanthemumArrangement color={flowerColor} theme={theme} count={planType === 'family' ? 15 : 30} />
         </>
       )}
 
@@ -999,30 +1028,8 @@ function Chair({ position, type = 'standard' }) {
     )
   }
 
-  // 通常の葬儀用椅子
-  return (
-    <group position={position}>
-      {/* Seat */}
-      <mesh position={[0, 0.45, 0]} castShadow>
-        <boxGeometry args={[0.45, 0.05, 0.45]} />
-        <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
-      </mesh>
-
-      {/* Backrest */}
-      <mesh position={[0, 0.75, -0.2]} castShadow>
-        <boxGeometry args={[0.45, 0.55, 0.05]} />
-        <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
-      </mesh>
-
-      {/* Legs */}
-      {[[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.22, z]} castShadow>
-          <cylinderGeometry args={[0.02, 0.02, 0.44, 8]} />
-          <meshStandardMaterial color="#333333" roughness={0.6} metalness={0.3} />
-        </mesh>
-      ))}
-    </group>
-  )
+  // 通常の葬儀用椅子 - リアルなCeremonyChairを使用
+  return <CeremonyChair position={position} withCushion={true} />
 }
 
 // Atmospheric Particles
@@ -1211,6 +1218,74 @@ function ChrysanthemumArrangement({ color, theme, count = 30 }) {
           position={flower.position}
           scale={flower.scale}
           color={colorMap[color]}
+        />
+      ))}
+    </group>
+  )
+}
+
+// ========== リアルな菊の花装飾 ==========
+function RealisticFlowerDecoration({ color, count, planType }) {
+  const positions = useMemo(() => {
+    const result = []
+    const isFamily = planType === 'family'
+
+    for (let i = 0; i < count; i++) {
+      const side = i % 2 === 0 ? -1 : 1
+      const x = side * (isFamily ? 0.8 + Math.random() * 1.2 : 1.2 + Math.random() * 1.8)
+      const y = (isFamily ? 0.6 : 0.8) + Math.random() * (isFamily ? 0.6 : 1)
+      const z = (isFamily ? -1.8 : -2.5) - Math.random() * (isFamily ? 0.8 : 1.2)
+
+      result.push({
+        position: [x, y, z],
+        scale: 0.8 + Math.random() * 0.5
+      })
+    }
+    return result
+  }, [count, planType])
+
+  return (
+    <group>
+      {positions.map((flower, i) => (
+        <RealisticChrysanthemum
+          key={i}
+          position={flower.position}
+          scale={flower.scale}
+          color={colorMap[color]}
+        />
+      ))}
+    </group>
+  )
+}
+
+// ========== 供花スタンド配置（会社名入り） ==========
+function CompanyFlowerStands({ count, flowerColor }) {
+  const stands = useMemo(() => {
+    const result = []
+    const perSide = Math.floor(count / 2)
+
+    for (let i = 0; i < perSide; i++) {
+      // 左側
+      result.push({
+        position: [-5, 0, -2 + i * 1.5],
+        color: i % 2 === 0 ? colorMap[flowerColor] : '#ffffff'
+      })
+      // 右側
+      result.push({
+        position: [5, 0, -2 + i * 1.5],
+        color: i % 2 === 0 ? '#ffffff' : colorMap[flowerColor]
+      })
+    }
+    return result
+  }, [count, flowerColor])
+
+  return (
+    <group>
+      {stands.map((stand, i) => (
+        <CompanyFlowerStand
+          key={i}
+          position={stand.position}
+          color={stand.color}
         />
       ))}
     </group>
