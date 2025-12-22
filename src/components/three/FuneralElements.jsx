@@ -419,8 +419,16 @@ export function LargeFlowerStand({ position = [0, 0, 0], color = '#ffffff' }) {
 }
 
 // ========== 天井照明器具 ==========
-export function CeilingLight({ position = [0, 0, 0], type = 'chandelier' }) {
+// lightCount: パフォーマンス設定から渡す（0=ライトなし、6=フル）
+export function CeilingLight({ position = [0, 0, 0], type = 'chandelier', lightCount = 6 }) {
   if (type === 'chandelier') {
+    // lightCountに応じてライト数を調整
+    const actualLights = useMemo(() => {
+      if (lightCount === 0) return [] // モバイル低スペック：ライトなし、見た目のみ
+      if (lightCount <= 2) return [0, 3] // 中スペック：2つのみ
+      return [0, 1, 2, 3, 4, 5] // フル：6つ
+    }, [lightCount])
+
     return (
       <group position={position}>
         {/* チェーン */}
@@ -430,24 +438,33 @@ export function CeilingLight({ position = [0, 0, 0], type = 'chandelier' }) {
         </mesh>
 
         {/* シャンデリア本体 */}
-        <mesh castShadow>
-          <cylinderGeometry args={[0.4, 0.2, 0.15, 24]} />
+        <mesh castShadow={lightCount > 0}>
+          <cylinderGeometry args={[0.4, 0.2, 0.15, lightCount > 2 ? 24 : 12]} />
           <meshStandardMaterial color="#d4af37" roughness={0.3} metalness={0.6} />
         </mesh>
 
-        {/* ライト部分 */}
+        {/* ライト部分 - 常に6つの球は表示（見た目のため） */}
         {[0, 1, 2, 3, 4, 5].map((i) => {
           const angle = (i / 6) * Math.PI * 2
+          const hasLight = actualLights.includes(i)
           return (
             <group key={i} position={[Math.cos(angle) * 0.3, -0.1, Math.sin(angle) * 0.3]}>
               <mesh>
-                <sphereGeometry args={[0.04, 12, 12]} />
+                <sphereGeometry args={[0.04, hasLight ? 12 : 8, hasLight ? 12 : 8]} />
                 <meshBasicMaterial color="#fffaee" />
               </mesh>
-              <pointLight intensity={0.3} color="#fff8ee" distance={3} />
+              {/* パフォーマンスに応じてポイントライトを追加 */}
+              {hasLight && (
+                <pointLight intensity={lightCount <= 2 ? 0.5 : 0.3} color="#fff8ee" distance={lightCount <= 2 ? 5 : 3} />
+              )}
             </group>
           )
         })}
+
+        {/* モバイル低スペック時：中央に1つだけ明るいライト */}
+        {lightCount === 0 && (
+          <pointLight position={[0, -0.15, 0]} intensity={1.5} color="#fff8ee" distance={8} />
+        )}
       </group>
     )
   }

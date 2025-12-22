@@ -1,10 +1,15 @@
-import { Suspense, useRef, useMemo, useEffect } from 'react'
+import { Suspense, useRef, useMemo, useEffect, createContext, useContext } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Environment, ContactShadows, Float, useGLTF, Html } from '@react-three/drei'
 import { EffectComposer, Bloom, Vignette, DepthOfField } from '@react-three/postprocessing'
-import { Map, User, Sun } from 'lucide-react'
+import { Map, User, Sun, Smartphone, Monitor } from 'lucide-react'
 import * as THREE from 'three'
 import { useFuneralStore } from '../../stores/funeralStore'
+import { useDevicePerformance } from '../../hooks/useDevicePerformance'
+
+// Performance context to pass settings through component tree
+const PerformanceContext = createContext(null)
+const usePerformance = () => useContext(PerformanceContext)
 import {
   Chrysanthemum,
   MemorialTablet,
@@ -39,26 +44,39 @@ import {
 
 // Main FuneralScene wrapper component
 export function FuneralScene({ viewMode, setViewMode }) {
+  const { tier, isMobile, settings } = useDevicePerformance()
+
   return (
     <div className="relative w-full h-full bg-black rounded-xl overflow-hidden shadow-2xl group border border-gray-800">
-      <Canvas
-        shadows
-        camera={{ fov: 40, position: [0, 6, 14], near: 0.1, far: 100 }}
-        gl={{
-          antialias: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0,
-        }}
-      >
-        <Suspense fallback={<LoadingFallback />}>
-          <SceneContent viewMode={viewMode} />
-        </Suspense>
-      </Canvas>
+      <PerformanceContext.Provider value={settings}>
+        <Canvas
+          shadows={settings.useShadows}
+          camera={{ fov: 40, position: [0, 6, 14], near: 0.1, far: 100 }}
+          dpr={settings.pixelRatio}
+          gl={{
+            antialias: settings.antialias,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.0,
+            powerPreference: isMobile ? 'low-power' : 'high-performance',
+          }}
+        >
+          <Suspense fallback={<LoadingFallback />}>
+            <SceneContent viewMode={viewMode} />
+          </Suspense>
+        </Canvas>
+      </PerformanceContext.Provider>
 
-      {/* UI Overlay */}
+      {/* Performance indicator */}
       <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs border border-white/20 flex items-center gap-2 shadow-xl">
-        <Sun size={12} className="text-yellow-400 animate-pulse" />
+        {isMobile ? (
+          <Smartphone size={12} className="text-blue-400" />
+        ) : (
+          <Monitor size={12} className="text-green-400" />
+        )}
         {viewMode === 'orbit' ? '全体ビュー' : '参列者ビュー'}
+        <span className="text-gray-500 text-[10px]">
+          {tier === 'high' ? 'HD' : tier === 'medium' ? 'SD' : 'Lite'}
+        </span>
       </div>
 
       <div className="absolute bottom-4 right-4 flex gap-2">
@@ -111,9 +129,12 @@ const colorMap = {
 function SceneContent({ viewMode }) {
   const { customization, planType } = useFuneralStore()
   const { theme, flowerColor, coffinType, flowerVolume } = customization
+  const perfSettings = usePerformance()
 
-  // プラン別の設定
+  // プラン別の設定 + パフォーマンス調整
   const sceneConfig = useMemo(() => {
+    const flowerMultiplier = perfSettings?.flowerMultiplier ?? 1
+
     switch (planType) {
       case 'direct':
         // 直葬: 最小限の火葬場控室
@@ -136,7 +157,7 @@ function SceneContent({ viewMode }) {
           hasAltar: true,
           altarTiers: 2,
           hasFlowers: true,
-          flowerCount: 1500,
+          flowerCount: Math.floor(1500 * flowerMultiplier),
           hasWreaths: false,
           hasReligiousItems: true,
           hasPhotoFrame: true,
@@ -153,7 +174,7 @@ function SceneContent({ viewMode }) {
           hasAltar: true,
           altarTiers: 4,
           hasFlowers: true,
-          flowerCount: 6000,
+          flowerCount: Math.floor(6000 * flowerMultiplier),
           hasWreaths: true,
           wreathCount: 8,
           hasReligiousItems: true,
@@ -164,7 +185,7 @@ function SceneContent({ viewMode }) {
           description: '大型葬儀会館',
         }
     }
-  }, [planType])
+  }, [planType, perfSettings?.flowerMultiplier])
 
   return (
     <>
@@ -307,11 +328,16 @@ function SceneContent({ viewMode }) {
       {/* ===== 天井照明 ===== */}
       {planType !== 'direct' && (
         <>
-          <CeilingLight position={[0, planType === 'family' ? 5 : 8, 0]} type="chandelier" />
-          {planType === 'general' && (
+          <CeilingLight
+            position={[0, planType === 'family' ? 5 : 8, 0]}
+            type="chandelier"
+            lightCount={perfSettings?.chandelierLights ?? 6}
+          />
+          {/* サブシャンデリア - 中/高パフォーマンス時のみ */}
+          {planType === 'general' && (perfSettings?.chandelierLights ?? 6) >= 2 && (
             <>
-              <CeilingLight position={[-4, 8, 3]} type="chandelier" />
-              <CeilingLight position={[4, 8, 3]} type="chandelier" />
+              <CeilingLight position={[-4, 8, 3]} type="chandelier" lightCount={perfSettings?.chandelierLights ?? 6} />
+              <CeilingLight position={[4, 8, 3]} type="chandelier" lightCount={perfSettings?.chandelierLights ?? 6} />
             </>
           )}
         </>
@@ -320,29 +346,33 @@ function SceneContent({ viewMode }) {
       {/* Seating - プラン別 */}
       <Seating planType={planType} count={sceneConfig.seatCount} />
 
-      {/* Particles - 一般葬のみ */}
-      {planType === 'general' && <Particles />}
+      {/* Particles - 一般葬のみ + パフォーマンス設定 */}
+      {planType === 'general' && perfSettings?.enableParticles && <Particles />}
 
-      {/* God Rays - 一般葬のみ */}
-      {planType === 'general' && <GodRays />}
+      {/* God Rays - 一般葬のみ + 高パフォーマンス時のみ */}
+      {planType === 'general' && perfSettings?.enableGodRays && <GodRays />}
 
-      {/* Contact Shadows */}
-      <ContactShadows
-        position={[0, 0.01, 0]}
-        opacity={0.5}
-        scale={sceneConfig.hallSize === 'large' ? 40 : sceneConfig.hallSize === 'medium' ? 25 : 15}
-        blur={2.5}
-        far={12}
-      />
+      {/* Contact Shadows - パフォーマンスに応じて */}
+      {perfSettings?.useShadows && (
+        <ContactShadows
+          position={[0, 0.01, 0]}
+          opacity={0.5}
+          scale={sceneConfig.hallSize === 'large' ? 40 : sceneConfig.hallSize === 'medium' ? 25 : 15}
+          blur={2.5}
+          far={12}
+        />
+      )}
 
       {/* Camera Controls */}
       <CameraController viewMode={viewMode} planType={planType} />
 
-      {/* Post Processing */}
-      <EffectComposer>
-        <Bloom luminanceThreshold={0.8} intensity={planType === 'direct' ? 0.2 : 0.4} radius={0.8} />
-        <Vignette eskil={false} offset={0.1} darkness={planType === 'direct' ? 0.8 : 0.6} />
-      </EffectComposer>
+      {/* Post Processing - 高パフォーマンス時のみ */}
+      {perfSettings?.enablePostProcessing && (
+        <EffectComposer>
+          <Bloom luminanceThreshold={0.8} intensity={planType === 'direct' ? 0.2 : 0.4} radius={0.8} />
+          <Vignette eskil={false} offset={0.1} darkness={planType === 'direct' ? 0.8 : 0.6} />
+        </EffectComposer>
+      )}
     </>
   )
 }
@@ -417,31 +447,37 @@ function WreathArrangement({ count, flowerColor }) {
   )
 }
 
-// Enhanced Lighting - プラン別（明るい式場）
+// Enhanced Lighting - プラン別（明るい式場）+ パフォーマンス最適化
 function SceneLighting({ theme, planType, config }) {
+  const perfSettings = usePerformance()
   const warmColor = theme === 'traditional' ? '#fff8ee' : '#ffffff'
   const isDirect = planType === 'direct'
   const isFamily = planType === 'family'
 
+  // モバイル時はアンビエント強め + ライト数削減で対応
+  const useShadows = perfSettings?.useShadows ?? true
+  const shadowMapSize = perfSettings?.shadowMapSize ?? 2048
+  const isLowPerf = perfSettings?.maxPointLights < 8
+
   return (
     <>
-      {/* 全体を明るく照らすアンビエント */}
-      <ambientLight intensity={isDirect ? 0.8 : 0.6} color="#ffffff" />
+      {/* 全体を明るく照らすアンビエント - モバイルでは強めに */}
+      <ambientLight intensity={isDirect ? 0.8 : isLowPerf ? 0.75 : 0.6} color="#ffffff" />
 
-      {/* メイン天井照明 - 明るく */}
+      {/* メイン天井照明 - 常に表示 */}
       <spotLight
         position={[0, isDirect ? 5 : 12, isDirect ? 1 : 0]}
         angle={Math.PI / 3}
         penumbra={0.5}
-        intensity={isDirect ? 3 : isFamily ? 5 : 6}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
+        intensity={isDirect ? 3 : isFamily ? 5 : isLowPerf ? 7 : 6}
+        castShadow={useShadows}
+        shadow-mapSize={[shadowMapSize, shadowMapSize]}
         shadow-bias={-0.0001}
         color={warmColor}
       />
 
-      {/* 追加の天井照明 */}
-      {!isDirect && (
+      {/* 追加の天井照明 - 中/高パフォーマンス時のみ */}
+      {!isDirect && !isLowPerf && (
         <>
           <spotLight
             position={[-4, 10, 2]}
@@ -460,46 +496,58 @@ function SceneLighting({ theme, planType, config }) {
         </>
       )}
 
-      {/* サイド照明 */}
-      <pointLight position={[-6, 4, 0]} intensity={isDirect ? 0.5 : 1} color="#ffffff" distance={15} />
-      <pointLight position={[6, 4, 0]} intensity={isDirect ? 0.5 : 1} color="#ffffff" distance={15} />
+      {/* サイド照明 - 低パフォーマンス時は1つに統合 */}
+      {isLowPerf ? (
+        <pointLight position={[0, 4, 3]} intensity={1.5} color="#ffffff" distance={20} />
+      ) : (
+        <>
+          <pointLight position={[-6, 4, 0]} intensity={isDirect ? 0.5 : 1} color="#ffffff" distance={15} />
+          <pointLight position={[6, 4, 0]} intensity={isDirect ? 0.5 : 1} color="#ffffff" distance={15} />
+        </>
+      )}
 
-      {/* 祭壇を照らすスポット - 直葬以外 */}
+      {/* 祭壇を照らすスポット - 直葬以外（低パフォーマンス時は1つ） */}
       {!isDirect && (
         <>
           <spotLight
             position={[0, 6, -2]}
             angle={Math.PI / 5}
             penumbra={0.3}
-            intensity={3}
+            intensity={isLowPerf ? 4 : 3}
             color="#fffaee"
             target-position={[0, 1, -3]}
           />
-          {/* 遺影を照らす */}
-          <spotLight
-            position={[0, 4, -1]}
-            angle={Math.PI / 8}
-            penumbra={0.2}
-            intensity={2}
-            color="#ffffff"
-          />
+          {/* 遺影を照らす - 中/高パフォーマンス時のみ */}
+          {!isLowPerf && (
+            <spotLight
+              position={[0, 4, -1]}
+              angle={Math.PI / 8}
+              penumbra={0.2}
+              intensity={2}
+              color="#ffffff"
+            />
+          )}
         </>
       )}
 
-      {/* 蝋燭の暖かい光 - 直葬以外 */}
-      {!isDirect && (
+      {/* 蝋燭の暖かい光 - 中/高パフォーマンス時のみ */}
+      {!isDirect && !isLowPerf && (
         <>
           <pointLight position={[-1, 1.5, -2]} intensity={0.5} color="#ffaa44" distance={3} />
           <pointLight position={[1, 1.5, -2]} intensity={0.5} color="#ffaa44" distance={3} />
         </>
       )}
 
-      {/* 直葬用の蛍光灯 */}
+      {/* 直葬用の蛍光灯 - 低パフォーマンス時は削減 */}
       {isDirect && (
         <>
           <pointLight position={[0, 3.5, 0]} intensity={2} color="#f8f8ff" distance={8} />
-          <pointLight position={[-2, 3.5, 0]} intensity={1} color="#f8f8ff" distance={6} />
-          <pointLight position={[2, 3.5, 0]} intensity={1} color="#f8f8ff" distance={6} />
+          {!isLowPerf && (
+            <>
+              <pointLight position={[-2, 3.5, 0]} intensity={1} color="#f8f8ff" distance={6} />
+              <pointLight position={[2, 3.5, 0]} intensity={1} color="#f8f8ff" distance={6} />
+            </>
+          )}
         </>
       )}
     </>
