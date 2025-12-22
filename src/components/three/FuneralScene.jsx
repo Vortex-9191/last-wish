@@ -157,7 +157,7 @@ function SceneContent({ viewMode }) {
           hasAltar: true,
           altarTiers: 2,
           hasFlowers: true,
-          flowerCount: Math.floor(1500 * flowerMultiplier),
+          flowerCount: Math.floor(500 * flowerMultiplier), // 1500 → 500
           hasWreaths: false,
           hasReligiousItems: true,
           hasPhotoFrame: true,
@@ -174,12 +174,12 @@ function SceneContent({ viewMode }) {
           hasAltar: true,
           altarTiers: 4,
           hasFlowers: true,
-          flowerCount: Math.floor(6000 * flowerMultiplier),
+          flowerCount: Math.floor(1500 * flowerMultiplier), // 6000 → 1500
           hasWreaths: true,
-          wreathCount: 8,
+          wreathCount: 4, // 8 → 4
           hasReligiousItems: true,
           hasPhotoFrame: true,
-          seatCount: 60,
+          seatCount: 40, // 60 → 40
           fogDensity: 45,
           ambientIntensity: 0.15,
           description: '大型葬儀会館',
@@ -248,10 +248,10 @@ function SceneContent({ viewMode }) {
                 theme={theme}
                 count={sceneConfig.flowerCount}
               />
-              {/* リアルな菊の花を追加 */}
+              {/* リアルな菊の花を追加 - 数を削減 */}
               <RealisticFlowerDecoration
                 color={flowerColor}
-                count={planType === 'family' ? 20 : 50}
+                count={planType === 'family' ? 8 : 15}
                 planType={planType}
               />
             </>
@@ -1031,51 +1031,33 @@ function Candles({ theme, count = 4 }) {
   )
 }
 
+// 蝋燭 - 静的（アニメーション・ポイントライト削除で軽量化）
 function Candle({ position }) {
-  const flameRef = useRef()
-
-  useFrame((state) => {
-    if (flameRef.current) {
-      flameRef.current.scale.y = 1 + Math.sin(state.clock.elapsedTime * 10 + position[0]) * 0.1
-      flameRef.current.scale.x = 1 + Math.cos(state.clock.elapsedTime * 8 + position[1]) * 0.05
-    }
-  })
-
   return (
     <group position={position}>
       {/* Candle holder */}
-      <mesh castShadow>
-        <cylinderGeometry args={[0.08, 0.1, 0.15, 16]} />
+      <mesh>
+        <cylinderGeometry args={[0.08, 0.1, 0.15, 8]} />
         <meshStandardMaterial color="#d4af37" roughness={0.3} metalness={0.7} />
       </mesh>
 
       {/* Candle body */}
-      <mesh position={[0, 0.25, 0]} castShadow>
-        <cylinderGeometry args={[0.04, 0.05, 0.4, 12]} />
+      <mesh position={[0, 0.25, 0]}>
+        <cylinderGeometry args={[0.04, 0.05, 0.4, 8]} />
         <meshStandardMaterial color="#f5f5dc" roughness={0.8} />
       </mesh>
 
-      {/* Flame */}
-      <mesh ref={flameRef} position={[0, 0.5, 0]}>
-        <coneGeometry args={[0.03, 0.1, 8]} />
+      {/* Flame - 静的 */}
+      <mesh position={[0, 0.5, 0]}>
+        <coneGeometry args={[0.03, 0.1, 6]} />
         <meshBasicMaterial color="#ff8800" transparent opacity={0.9} />
       </mesh>
-
-      {/* Flame glow */}
-      <pointLight position={[0, 0.5, 0]} intensity={0.2} color="#ff6600" distance={2} />
     </group>
   )
 }
 
-// Incense Burner
+// Incense Burner - 静的（アニメーション削除）
 function IncenseBurner() {
-  const smokeRef = useRef()
-
-  useFrame((state) => {
-    if (smokeRef.current) {
-      smokeRef.current.rotation.y = state.clock.elapsedTime * 0.5
-    }
-  })
 
   return (
     <group position={[0, 0.7, 0.5]}>
@@ -1097,12 +1079,12 @@ function IncenseBurner() {
         <meshStandardMaterial color="#888888" roughness={0.9} />
       </mesh>
 
-      {/* Smoke particles (simple representation) */}
-      <group ref={smokeRef} position={[0, 0.3, 0]}>
-        {[0, 0.15, 0.3, 0.45].map((y, i) => (
+      {/* Smoke particles - 静的 */}
+      <group position={[0, 0.3, 0]}>
+        {[0, 0.15, 0.3].map((y, i) => (
           <mesh key={i} position={[Math.sin(i) * 0.02, y, Math.cos(i) * 0.02]}>
-            <sphereGeometry args={[0.02 + i * 0.01, 8, 8]} />
-            <meshBasicMaterial color="#cccccc" transparent opacity={0.3 - i * 0.06} />
+            <sphereGeometry args={[0.02 + i * 0.01, 6, 6]} />
+            <meshBasicMaterial color="#cccccc" transparent opacity={0.3 - i * 0.08} />
           </mesh>
         ))}
       </group>
@@ -1203,9 +1185,9 @@ function Chair({ position, type = 'standard' }) {
   return <CeremonyChair position={position} withCushion={true} />
 }
 
-// Atmospheric Particles
+// Atmospheric Particles - 軽量化版
 function Particles() {
-  const count = 600
+  const count = 200 // 600 → 200
   const particlesRef = useRef()
 
   const positions = useMemo(() => {
@@ -1218,15 +1200,10 @@ function Particles() {
     return pos
   }, [])
 
+  // 個別更新を廃止、全体回転のみ
   useFrame((state) => {
     if (particlesRef.current) {
       particlesRef.current.rotation.y = state.clock.elapsedTime * 0.02
-      // Subtle vertical float
-      const positions = particlesRef.current.geometry.attributes.position.array
-      for (let i = 0; i < count; i++) {
-        positions[i * 3 + 1] += Math.sin(state.clock.elapsedTime + i) * 0.001
-      }
-      particlesRef.current.geometry.attributes.position.needsUpdate = true
     }
   })
 
