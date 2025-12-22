@@ -81,10 +81,13 @@ function LoadingScreen() {
 // ========== 葬儀ホール全体 ==========
 function FuneralHall({ isMobile }) {
   const { planType, customization } = useFuneralStore()
-  const { theme, flowerColor, coffinType } = customization
+  const { theme, flowerColor, coffinType, flowerVolume } = customization
 
   // プラン別設定
   const config = useMemo(() => {
+    // 花のボリューム係数
+    const volumeMultiplier = flowerVolume === 'minimal' ? 0.5 : flowerVolume === 'lavish' ? 1.5 : 1
+
     switch (planType) {
       case 'direct':
         return {
@@ -95,6 +98,7 @@ function FuneralHall({ isMobile }) {
           seatRows: 1,
           seatsPerRow: 4,
           altarWidth: 0,
+          flowerDensity: 0,
         }
       case 'family':
         return {
@@ -106,6 +110,7 @@ function FuneralHall({ isMobile }) {
           altarHeight: 2,
           seatRows: 2,
           seatsPerRow: 6,
+          flowerDensity: 0.7 * volumeMultiplier,
         }
       default: // general
         return {
@@ -117,22 +122,23 @@ function FuneralHall({ isMobile }) {
           altarHeight: 2.8,
           seatRows: 4,
           seatsPerRow: 8,
+          flowerDensity: 1.0 * volumeMultiplier,
         }
     }
-  }, [planType])
+  }, [planType, flowerVolume])
 
   const colors = flowerColors[flowerColor] || flowerColors.white
 
   return (
     <group>
       {/* 照明 */}
-      <HallLighting config={config} planType={planType} />
+      <HallLighting config={config} planType={planType} theme={theme} />
 
       {/* 会場構造 */}
-      <HallStructure config={config} planType={planType} />
+      <HallStructure config={config} planType={planType} theme={theme} />
 
       {/* 床 */}
-      <Floor config={config} planType={planType} />
+      <Floor config={config} planType={planType} theme={theme} />
 
       {/* 祭壇エリア */}
       {config.hasAltar && (
@@ -143,6 +149,7 @@ function FuneralHall({ isMobile }) {
             height={config.altarHeight}
             color={colors}
             theme={theme}
+            flowerDensity={config.flowerDensity}
             isMobile={isMobile}
           />
 
@@ -184,19 +191,47 @@ function FuneralHall({ isMobile }) {
 }
 
 // ========== 照明 ==========
-function HallLighting({ config, planType }) {
+function HallLighting({ config, planType, theme }) {
   const isDirect = planType === 'direct'
+
+  // テーマ別の照明色
+  const lightColors = useMemo(() => {
+    switch (theme) {
+      case 'traditional':
+        return {
+          ambient: '#fff5e0', // 暖かみのある光
+          main: '#fff8f0',
+          spot: '#fffae0', // 金色っぽい
+          accent: '#ffe8d0',
+        }
+      case 'modern':
+        return {
+          ambient: '#f0f0ff', // クールな白
+          main: '#ffffff',
+          spot: '#ffffff',
+          accent: '#e8e8ff',
+        }
+      case 'nature':
+      default:
+        return {
+          ambient: '#f5fff0', // 自然光
+          main: '#fffff0',
+          spot: '#fffaf5',
+          accent: '#f0ffe8',
+        }
+    }
+  }, [theme])
 
   return (
     <>
-      {/* 環境光 - 明るめ */}
-      <ambientLight intensity={isDirect ? 0.7 : 0.5} color="#fff8f0" />
+      {/* 環境光 - テーマで色が変わる */}
+      <ambientLight intensity={isDirect ? 0.7 : 0.5} color={lightColors.ambient} />
 
       {/* メイン天井照明 */}
       <directionalLight
         position={[0, config.hallHeight, 2]}
         intensity={isDirect ? 1.5 : 2}
-        color="#ffffff"
+        color={lightColors.main}
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
@@ -209,7 +244,7 @@ function HallLighting({ config, planType }) {
             angle={Math.PI / 4}
             penumbra={0.5}
             intensity={3}
-            color="#fffaf0"
+            color={lightColors.spot}
             target-position={[0, 1.5, -config.hallDepth / 2 + 1.5]}
           />
           {/* 遺影用スポット */}
@@ -218,26 +253,54 @@ function HallLighting({ config, planType }) {
             angle={Math.PI / 6}
             penumbra={0.3}
             intensity={2}
-            color="#ffffff"
+            color={lightColors.main}
           />
         </>
       )}
 
       {/* 補助光 */}
-      <pointLight position={[-config.hallWidth / 3, 2, 0]} intensity={0.5} color="#fff0e0" />
-      <pointLight position={[config.hallWidth / 3, 2, 0]} intensity={0.5} color="#fff0e0" />
+      <pointLight position={[-config.hallWidth / 3, 2, 0]} intensity={0.5} color={lightColors.accent} />
+      <pointLight position={[config.hallWidth / 3, 2, 0]} intensity={0.5} color={lightColors.accent} />
     </>
   )
 }
 
 // ========== 会場構造 ==========
-function HallStructure({ config, planType }) {
+function HallStructure({ config, planType, theme }) {
   const { hallWidth, hallDepth, hallHeight } = config
   const isDirect = planType === 'direct'
 
+  // テーマ別の色設定
+  const themeColors = useMemo(() => {
+    switch (theme) {
+      case 'traditional':
+        return {
+          wall: '#f5efe8',
+          backWall: '#2a1a3a', // 深紫
+          curtain: '#1a1a4a', // 紺
+          trim: '#d4af37', // 金
+        }
+      case 'modern':
+        return {
+          wall: '#f0f0f0',
+          backWall: '#1a1a1a', // 黒
+          curtain: '#2a2a2a', // ダークグレー
+          trim: '#c0c0c0', // シルバー
+        }
+      case 'nature':
+      default:
+        return {
+          wall: '#f8f4f0',
+          backWall: '#1a2a1a', // 深緑
+          curtain: '#2d4a2d', // 緑
+          trim: '#a08060', // ブロンズ
+        }
+    }
+  }, [theme])
+
   // 壁の色
-  const wallColor = isDirect ? '#f5f5f5' : '#f8f4f0'
-  const backWallColor = isDirect ? '#e8e8e8' : '#2a2035'
+  const wallColor = isDirect ? '#f5f5f5' : themeColors.wall
+  const backWallColor = isDirect ? '#e8e8e8' : themeColors.backWall
 
   return (
     <group>
@@ -266,18 +329,18 @@ function HallStructure({ config, planType }) {
         <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      {/* 祭壇背景の幕（一般葬・家族葬） */}
+      {/* 祭壇背景の幕（一般葬・家族葬）- テーマで色が変わる */}
       {!isDirect && (
         <group position={[0, hallHeight / 2, -hallDepth / 2 + 0.1]}>
-          {/* 紫の幕 */}
+          {/* 幕 */}
           <mesh>
             <planeGeometry args={[hallWidth * 0.7, hallHeight * 0.85]} />
-            <meshStandardMaterial color="#1a1525" />
+            <meshStandardMaterial color={themeColors.curtain} />
           </mesh>
-          {/* 金の縁取り */}
+          {/* 縁取り */}
           <mesh position={[0, hallHeight * 0.85 / 2 - 0.05, 0.01]}>
             <planeGeometry args={[hallWidth * 0.72, 0.08]} />
-            <meshStandardMaterial color="#d4af37" metalness={0.6} roughness={0.3} />
+            <meshStandardMaterial color={themeColors.trim} metalness={0.6} roughness={0.3} />
           </mesh>
         </group>
       )}
@@ -286,9 +349,35 @@ function HallStructure({ config, planType }) {
 }
 
 // ========== 床 ==========
-function Floor({ config, planType }) {
+function Floor({ config, planType, theme }) {
   const { hallWidth, hallDepth } = config
   const isDirect = planType === 'direct'
+
+  // テーマ別のカーペット色
+  const carpetColor = useMemo(() => {
+    switch (theme) {
+      case 'traditional':
+        return '#6b0000' // 深い赤（伝統的）
+      case 'modern':
+        return '#1a1a1a' // 黒（モダン）
+      case 'nature':
+      default:
+        return '#2d4a2d' // 深緑（ナチュラル）
+    }
+  }, [theme])
+
+  // テーマ別の床色
+  const floorColor = useMemo(() => {
+    switch (theme) {
+      case 'traditional':
+        return '#5a4a3a' // 濃い木目
+      case 'modern':
+        return '#3a3a3a' // ダークグレー
+      case 'nature':
+      default:
+        return '#4a3c32' // ナチュラルブラウン
+    }
+  }, [theme])
 
   return (
     <group>
@@ -296,16 +385,16 @@ function Floor({ config, planType }) {
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[hallWidth, hallDepth]} />
         <meshStandardMaterial
-          color={isDirect ? '#c0b0a0' : '#4a3c32'}
+          color={isDirect ? '#c0b0a0' : floorColor}
           roughness={0.8}
         />
       </mesh>
 
-      {/* 赤いカーペット（一般葬・家族葬） */}
+      {/* カーペット（一般葬・家族葬）- テーマで色が変わる */}
       {!isDirect && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 1]}>
           <planeGeometry args={[2, hallDepth - 2]} />
-          <meshStandardMaterial color="#8b0000" roughness={0.9} />
+          <meshStandardMaterial color={carpetColor} roughness={0.9} />
         </mesh>
       )}
     </group>
@@ -313,60 +402,116 @@ function Floor({ config, planType }) {
 }
 
 // ========== 生花祭壇（リアル版） ==========
-function FlowerAltar({ width, height, color, theme, isMobile }) {
-  // 花の塊を生成（ドットではなく塊として）
+function FlowerAltar({ width, height, color, theme, flowerDensity = 1, isMobile }) {
+  // テーマ別の祭壇スタイル
+  const altarStyle = useMemo(() => {
+    switch (theme) {
+      case 'traditional':
+        return {
+          woodColor: '#d4a574', // 明るい木目
+          trimColor: '#d4af37', // 金
+          clothColor: '#1a1a4a', // 紺
+          flowerRatio: 0.3, // 白菊多め
+        }
+      case 'modern':
+        return {
+          woodColor: '#2a2a2a', // ダークグレー
+          trimColor: '#c0c0c0', // シルバー
+          clothColor: '#1a1a1a', // 黒
+          flowerRatio: 0.8, // カラー花多め
+        }
+      case 'nature':
+      default:
+        return {
+          woodColor: '#8b7355', // ナチュラルウッド
+          trimColor: '#a08060', // ブロンズ
+          clothColor: '#2d4a2d', // 深緑
+          flowerRatio: 0.6, // バランス
+        }
+    }
+  }, [theme])
+
+  // 花の塊を生成 - flowerDensityで密度を調整
   const flowerClusters = useMemo(() => {
     const clusters = []
-    const rows = Math.floor(height / 0.4)
-    const cols = Math.floor(width / 0.35)
+    const baseRows = Math.floor(height / 0.4)
+    const baseCols = Math.floor(width / 0.35)
+    const rows = Math.max(2, Math.floor(baseRows * flowerDensity))
+    const cols = Math.max(3, Math.floor(baseCols * flowerDensity))
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const x = (col - cols / 2 + 0.5) * 0.35 + (Math.random() - 0.5) * 0.1
-        const y = row * 0.4 + 0.3 + (Math.random() - 0.5) * 0.1
-        const z = -row * 0.15 + (Math.random() - 0.5) * 0.05
+        const x = (col - cols / 2 + 0.5) * (width / cols) + (Math.random() - 0.5) * 0.1
+        const y = row * (height / rows) + 0.3 + (Math.random() - 0.5) * 0.1
+        const z = -row * 0.12 + (Math.random() - 0.5) * 0.05
 
         // 中央付近は遺影用に空ける
         const distFromCenter = Math.sqrt(x * x + (y - height * 0.7) ** 2)
-        if (distFromCenter < 0.5) continue
+        if (distFromCenter < 0.4) continue
+
+        // flowerRatioでカラー花の割合を決定
+        const isMainColor = Math.random() < altarStyle.flowerRatio
+        const isGreen = Math.random() > 0.9
 
         clusters.push({
           position: [x, y, z],
-          scale: 0.12 + Math.random() * 0.08,
-          isWhite: Math.random() > 0.6,
-          isGreen: Math.random() > 0.85,
+          scale: (0.1 + Math.random() * 0.08) * (flowerDensity > 1 ? 1.2 : 1),
+          isMainColor,
+          isGreen,
         })
       }
     }
     return clusters
-  }, [width, height])
+  }, [width, height, flowerDensity, altarStyle.flowerRatio])
 
   return (
     <group>
-      {/* 祭壇の段（白木調） */}
+      {/* 祭壇の段 - テーマで色が変わる */}
       {[0, 0.5, 1.0].map((y, i) => (
         <mesh key={i} position={[0, y + 0.15, -i * 0.2]} castShadow receiveShadow>
           <boxGeometry args={[width - i * 0.3, 0.3, 0.8 - i * 0.1]} />
-          <meshStandardMaterial color="#f5f0e8" roughness={0.5} />
+          <meshStandardMaterial color={altarStyle.woodColor} roughness={0.5} />
         </mesh>
       ))}
 
-      {/* 花の塊 */}
+      {/* 祭壇の布（テーマで色が変わる） */}
+      <mesh position={[0, 0.32, 0.38]}>
+        <boxGeometry args={[width + 0.05, 0.25, 0.02]} />
+        <meshStandardMaterial color={altarStyle.clothColor} roughness={0.8} />
+      </mesh>
+
+      {/* 花の塊 - カラーがはっきり反映される */}
       {flowerClusters.map((cluster, i) => (
         <FlowerCluster
           key={i}
           position={cluster.position}
           scale={cluster.scale}
-          color={cluster.isGreen ? '#228b22' : cluster.isWhite ? '#ffffff' : color.main}
+          color={cluster.isGreen ? '#228b22' : cluster.isMainColor ? color.main : '#ffffff'}
           isMobile={isMobile}
         />
       ))}
 
-      {/* 祭壇装飾（金の縁） */}
-      <mesh position={[0, 0.32, 0.35]}>
+      {/* 祭壇装飾（テーマで色が変わる） */}
+      <mesh position={[0, 0.32, 0.4]}>
         <boxGeometry args={[width + 0.1, 0.05, 0.05]} />
-        <meshStandardMaterial color="#d4af37" metalness={0.7} roughness={0.3} />
+        <meshStandardMaterial color={altarStyle.trimColor} metalness={0.7} roughness={0.3} />
       </mesh>
+
+      {/* 豪華版（flowerDensity > 1）の場合、サイド花を追加 */}
+      {flowerDensity > 1 && (
+        <>
+          {[-1, 1].map((side) => (
+            <group key={side} position={[side * (width / 2 + 0.3), 0.5, 0]}>
+              {[0, 1, 2].map((i) => (
+                <mesh key={i} position={[0, i * 0.3, 0]}>
+                  <icosahedronGeometry args={[0.15, 1]} />
+                  <meshStandardMaterial color={i % 2 === 0 ? color.main : '#ffffff'} roughness={0.7} />
+                </mesh>
+              ))}
+            </group>
+          ))}
+        </>
+      )}
     </group>
   )
 }
