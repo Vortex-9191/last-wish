@@ -122,7 +122,7 @@ function VenueTab() {
               onClick={() => setCustomization({ flowerVolume: v })}
               className={`flex-1 py-3 text-xs border rounded-lg transition-all tracking-wide ${
                 customization.flowerVolume === v
-                  ? 'bg-[#1a1a2e] text-[#d4af37] border-[#1a1a2e]'
+                  ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
             >

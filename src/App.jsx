@@ -1,9 +1,33 @@
-import { Heart } from 'lucide-react'
 import { useFuneralStore } from './stores/funeralStore'
 import StepOne from './components/ui/StepOne'
 import StepTwo from './components/ui/StepTwo'
 import StepThree from './components/ui/StepThree'
 import PaymentModal from './components/ui/PaymentModal'
+
+// パンダアイコン
+function PandaIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      {/* 顔 */}
+      <circle cx="50" cy="50" r="40" fill="white"/>
+      {/* 耳 */}
+      <circle cx="22" cy="22" r="14" fill="#1a1a2e"/>
+      <circle cx="78" cy="22" r="14" fill="#1a1a2e"/>
+      {/* 目のパッチ */}
+      <ellipse cx="32" cy="45" rx="12" ry="14" fill="#1a1a2e"/>
+      <ellipse cx="68" cy="45" rx="12" ry="14" fill="#1a1a2e"/>
+      {/* 目 */}
+      <circle cx="34" cy="44" r="5" fill="white"/>
+      <circle cx="66" cy="44" r="5" fill="white"/>
+      <circle cx="35" cy="43" r="2" fill="#1a1a2e"/>
+      <circle cx="67" cy="43" r="2" fill="#1a1a2e"/>
+      {/* 鼻 */}
+      <ellipse cx="50" cy="60" rx="6" ry="4" fill="#1a1a2e"/>
+      {/* 口 */}
+      <path d="M44 68 Q50 74 56 68" stroke="#1a1a2e" strokeWidth="2" fill="none"/>
+    </svg>
+  )
+}
 
 export default function App() {
   const { step, showPayModal } = useFuneralStore()
@@ -14,8 +38,8 @@ export default function App() {
       <header className="bg-[#1a1a2e] text-white sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-[#d4af37] to-[#b8860b] p-2 rounded-lg">
-              <Heart size={18} fill="currentColor" />
+            <div className="bg-white p-1.5 rounded-lg">
+              <PandaIcon size={28} />
             </div>
             <div>
               <span className="text-lg font-medium tracking-widest">Last Wish</span>
