@@ -892,14 +892,14 @@ function SeatingArea({ config, planType }) {
 
 function Chair({ position, type }) {
   if (type === 'folding') {
-    // パイプ椅子
+    // パイプ椅子 - 背もたれを後ろ側（+Z）に配置して祭壇に向ける
     return (
       <group position={position}>
         <mesh position={[0, 0.4, 0]}>
           <boxGeometry args={[0.4, 0.03, 0.4]} />
           <meshStandardMaterial color="#404040" />
         </mesh>
-        <mesh position={[0, 0.65, -0.18]}>
+        <mesh position={[0, 0.65, 0.18]}>
           <boxGeometry args={[0.4, 0.45, 0.02]} />
           <meshStandardMaterial color="#404040" />
         </mesh>
@@ -907,7 +907,7 @@ function Chair({ position, type }) {
     )
   }
 
-  // 葬儀用椅子
+  // 葬儀用椅子 - 背もたれを後ろ側（+Z）に配置して祭壇に向ける
   return (
     <group position={position}>
       {/* 座面 */}
@@ -921,11 +921,11 @@ function Chair({ position, type }) {
         <meshStandardMaterial color="#4a0040" roughness={0.9} />
       </mesh>
       {/* 背もたれ */}
-      <mesh position={[0, 0.75, -0.2]} castShadow>
+      <mesh position={[0, 0.75, 0.2]} castShadow>
         <boxGeometry args={[0.45, 0.55, 0.04]} />
         <meshStandardMaterial color="#1a1a1a" />
       </mesh>
-      <mesh position={[0, 0.75, -0.17]}>
+      <mesh position={[0, 0.75, 0.17]}>
         <boxGeometry args={[0.4, 0.5, 0.02]} />
         <meshStandardMaterial color="#4a0040" roughness={0.9} />
       </mesh>
