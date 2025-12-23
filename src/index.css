@@ -1,13 +1,52 @@
 @import "tailwindcss";
 
-/* Custom styles */
+/* 高級感のある明朝体ベースのデザイン */
+:root {
+  /* カラーパレット - 落ち着いた高級感 */
+  --color-gold: #b8860b;
+  --color-gold-light: #d4af37;
+  --color-navy: #1a1a2e;
+  --color-navy-light: #2d2d4a;
+  --color-cream: #faf8f5;
+  --color-warm-gray: #6b6b6b;
+}
+
+body {
+  font-family: "Noto Serif JP", "游明朝", "Yu Mincho", "ヒラギノ明朝 ProN", "Hiragino Mincho ProN", serif;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.8;
+  color: #2a2a2a;
+  background-color: var(--color-cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 見出し用のスタイル */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+/* ボタンの高級感 */
+button {
+  font-family: inherit;
+  letter-spacing: 0.05em;
+}
+
+/* 入力フィールド */
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* アニメーション */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
+  animation: fade-in 0.6s ease-out forwards;
 }
 
 @keyframes fade-in-up {
@@ -16,5 +55,34 @@
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* 上品なシャドウ */
+.shadow-elegant {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ゴールドのアクセント */
+.text-gold {
+  color: var(--color-gold);
+}
+
+.bg-gold {
+  background-color: var(--color-gold);
+}
+
+.border-gold {
+  border-color: var(--color-gold);
+}
+
+/* 高級感のあるグラデーション */
+.gradient-premium {
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+}
+
+/* セレクション */
+::selection {
+  background-color: rgba(184, 134, 11, 0.2);
+  color: var(--color-navy);
 }
