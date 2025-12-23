@@ -33,7 +33,7 @@ export default function App() {
               <div
                 key={num}
                 className={`flex items-center gap-2 transition-all duration-300 ${
-                  step >= num ? 'text-[#d4af37]' : 'text-gray-500'
+                  step >= num ? 'text-white' : 'text-gray-500'
                 }`}
               >
                 <span

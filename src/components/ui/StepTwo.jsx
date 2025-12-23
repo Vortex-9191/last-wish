@@ -65,12 +65,12 @@ export default function StepTwo() {
         <div className="bg-[#1a1a2e] p-4 lg:p-5 shrink-0">
           <div className="flex justify-between items-end mb-3">
             <span className="text-xs lg:text-sm text-gray-400 tracking-wide">概算お見積り</span>
-            <span className="text-xl lg:text-2xl font-medium text-[#d4af37]">¥{totalCost.toLocaleString()}</span>
+            <span className="text-xl lg:text-2xl font-medium text-white">¥{totalCost.toLocaleString()}</span>
           </div>
           <div className="flex gap-2 mt-3">
             <button
               onClick={prevStep}
-              className="px-4 py-3 border border-gray-600 rounded-lg text-xs lg:text-sm text-gray-300 hover:bg-gray-800 font-medium tracking-wide transition-all"
+              className="px-4 py-3 border border-gray-500 rounded-lg text-xs lg:text-sm text-white hover:bg-gray-700 font-medium tracking-wide transition-all"
             >
               戻る
             </button>

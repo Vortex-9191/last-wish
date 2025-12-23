@@ -126,23 +126,23 @@ export default function StepThree() {
               <span className="text-white font-medium">¥{totalCost.toLocaleString()}</span>
             </div>
 
-            <div className="bg-[#2d2d4a] p-4 rounded-xl">
-              <div className="flex justify-between text-[#d4af37] font-medium mb-2">
+            <div className="bg-[#2d2d4a] p-4 rounded-xl border border-[#d4af37]/30">
+              <div className="flex justify-between text-emerald-400 font-medium mb-2">
                 <span className="flex items-center gap-2">
                   <Shield size={16} /> 保険適用
                 </span>
                 <span>-¥{Math.min(totalCost, insuranceCoverage).toLocaleString()}</span>
               </div>
-              <div className="text-[10px] text-gray-500 leading-relaxed">
+              <div className="text-[10px] text-gray-400 leading-relaxed">
                 ※ご契約の生命保険（上限200万円）から直接支払われます
               </div>
             </div>
 
-            <div className="h-px bg-gray-700 my-4" />
+            <div className="h-px bg-gray-600 my-4" />
 
             <div>
               <span className="block text-sm text-gray-400 mb-2">自己負担額（本日決済）</span>
-              <span className="block text-3xl font-medium text-[#d4af37]">
+              <span className="block text-3xl font-medium text-white">
                 ¥{outOfPocket.toLocaleString()}
               </span>
             </div>
