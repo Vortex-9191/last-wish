@@ -8,11 +8,11 @@ import PaymentModal from './components/ui/PaymentModal'
 function PandaIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      {/* 顔 */}
-      <circle cx="50" cy="50" r="40" fill="white"/>
       {/* 耳 */}
       <circle cx="22" cy="22" r="14" fill="#1a1a2e"/>
       <circle cx="78" cy="22" r="14" fill="#1a1a2e"/>
+      {/* 顔（輪郭付き） */}
+      <circle cx="50" cy="50" r="38" fill="white" stroke="#1a1a2e" strokeWidth="3"/>
       {/* 目のパッチ */}
       <ellipse cx="32" cy="45" rx="12" ry="14" fill="#1a1a2e"/>
       <ellipse cx="68" cy="45" rx="12" ry="14" fill="#1a1a2e"/>
@@ -38,7 +38,7 @@ export default function App() {
       <header className="bg-[#1a1a2e] text-white sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white p-1 rounded-xl">
+            <div className="bg-white p-1 rounded-xl flex items-center justify-center">
               <PandaIcon size={42} />
             </div>
             <div>

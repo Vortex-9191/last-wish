@@ -4,9 +4,9 @@ import { Sparkles } from 'lucide-react'
 function PandaIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="40" fill="white"/>
       <circle cx="22" cy="22" r="14" fill="#1a1a2e"/>
       <circle cx="78" cy="22" r="14" fill="#1a1a2e"/>
+      <circle cx="50" cy="50" r="38" fill="white" stroke="#1a1a2e" strokeWidth="3"/>
       <ellipse cx="32" cy="45" rx="12" ry="14" fill="#1a1a2e"/>
       <ellipse cx="68" cy="45" rx="12" ry="14" fill="#1a1a2e"/>
       <circle cx="34" cy="44" r="5" fill="white"/>
