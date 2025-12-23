@@ -38,8 +38,8 @@ export default function App() {
       <header className="bg-[#1a1a2e] text-white sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white p-1.5 rounded-lg">
-              <PandaIcon size={28} />
+            <div className="bg-white p-1 rounded-xl">
+              <PandaIcon size={42} />
             </div>
             <div>
               <span className="text-lg font-medium tracking-widest">Last Wish</span>
